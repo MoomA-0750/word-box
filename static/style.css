@@ -1,0 +1,526 @@
+/* static/style.css */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fafafa;
+}
+
+header {
+  border-bottom: 2px solid #333;
+  padding-bottom: 20px;
+  margin-bottom: 40px;
+}
+
+header h1 a {
+  color: #333;
+  text-decoration: none;
+}
+
+header h1 a:hover {
+  color: #0969da;
+}
+
+/* メインナビゲーション */
+.main-nav {
+  margin-top: 12px;
+  display: flex;
+  gap: 20px;
+}
+
+.main-nav a {
+  color: #666;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.main-nav a:hover {
+  color: #0969da;
+  border-bottom-color: #0969da;
+}
+
+/* 記事一覧の絵文字表示 */
+.post-list h2 {
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.post-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.post-list-item:hover {
+  border-color: #999;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.post-emoji {
+  font-size: 48px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.post-info {
+  flex: 1;
+}
+
+.post-info h3 {
+  margin: 0 0 8px 0;
+}
+
+.post-info h3 a {
+  color: #333;
+  text-decoration: none;
+}
+
+.post-info h3 a:hover {
+  color: #0969da;
+}
+
+.post-list-item:hover .post-info h3 a {
+  color: #0969da;
+}
+
+.post-info time {
+  color: #666;
+  font-size: 0.9em;
+}
+
+/* 記事メタ情報のレイアウト */
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.post-meta .tags {
+  margin-top: 0;
+}
+
+.post-meta time {
+  color: #666;
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 0;
+}
+
+.post-info .post-meta {
+  margin-top: 8px;
+}
+
+/* タグのスタイル */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tags-small {
+  margin-top: 4px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: #e1e8ed;
+  color: #1f2328;
+  border-radius: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tag:hover {
+  background: #c9d1d9;
+}
+
+/* 記事ページのヘッダー */
+article {
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+.post-header-emoji {
+  font-size: 64px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.post-header-text {
+  flex: 1;
+}
+
+.post-header-text h1 {
+  margin: 0 0 10px 0;
+}
+
+.post-header-text .post-meta {
+  margin-top: 10px;
+}
+
+.post-header-text .post-meta time {
+  font-size: 1em;
+}
+
+/* 記事コンテンツ */
+.content {
+  margin-top: 20px;
+}
+
+.content h1, .content h2, .content h3, .content h4, .content h5, .content h6 {
+  margin-top: 30px;
+  margin-bottom: 15px;
+  color: #1f2328;
+}
+
+.content h1 {
+  font-size: 2em;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.content h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 8px;
+}
+
+.content p {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.content a {
+  color: #0969da;
+  text-decoration: none;
+}
+
+.content a:hover {
+  text-decoration: underline;
+}
+
+.content ul, .content ol {
+  margin: 15px 0;
+  padding-left: 30px;
+}
+
+.content li {
+  margin-bottom: 8px;
+}
+
+.content hr {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 30px 0;
+}
+
+/* インラインコード */
+.content code {
+  background: #f4f4f4;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+/* コードブロックのスタイル */
+.code-block {
+  position: relative;
+  margin: 20px 0;
+  background: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #404040;
+}
+
+.code-language {
+  font-size: 12px;
+  font-weight: 600;
+  color: #858585;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.copy-button {
+  padding: 4px 12px;
+  font-size: 12px;
+  background: #404040;
+  color: #e0e0e0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-button:hover {
+  background: #505050;
+}
+
+.copy-button:active {
+  background: #606060;
+}
+
+.copy-button.copied {
+  background: #28a745;
+  color: white;
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 16px;
+  background: #1e1e1e;
+  overflow-x: auto;
+}
+
+.code-block pre code {
+  background: none;
+  padding: 0;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 画像 */
+.content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 20px 0;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 外部ブックマークカード */
+.bookmark-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  margin: 20px 0;
+  border: 1px solid #e0e0e0;
+  border-left: 4px solid #8250df;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+  background: #fff;
+}
+
+.bookmark-card:hover {
+  border-color: #8250df;
+  box-shadow: 0 2px 8px rgba(130, 80, 223, 0.1);
+  transform: translateY(-2px);
+}
+
+.bookmark-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.bookmark-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.bookmark-title {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.bookmark-url {
+  font-size: 13px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bookmark-arrow {
+  font-size: 24px;
+  color: #8250df;
+  flex-shrink: 0;
+}
+
+/* 内部記事カード */
+.article-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  margin: 20px 0;
+  border: 1px solid #d0d7de;
+  border-left: 4px solid #0969da;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+  background: #f6f8fa;
+}
+
+.article-card:hover {
+  border-color: #0969da;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(9, 105, 218, 0.1);
+  transform: translateY(-2px);
+}
+
+.article-card-notfound {
+  border-left-color: #d1242f;
+  background: #fff1f0;
+  cursor: not-allowed;
+}
+
+.article-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.article-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.article-title {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 6px;
+  color: #1f2328;
+}
+
+.article-meta {
+  font-size: 13px;
+  color: #656d76;
+}
+
+.article-meta time {
+  font-style: italic;
+}
+
+.article-arrow {
+  font-size: 24px;
+  color: #0969da;
+  flex-shrink: 0;
+}
+
+/* タグページ */
+.tag-page h2 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.tag-page p {
+  color: #666;
+  margin-bottom: 30px;
+}
+
+/* トピックページ */
+.topic-page h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* 目次 */
+.toc {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 20px 0;
+}
+
+.toc-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2328;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #d0d7de;
+}
+
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc li {
+  margin: 6px 0;
+}
+
+.toc li a {
+  color: #0969da;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.toc li a:hover {
+  text-decoration: underline;
+}
+
+.toc .toc-indent-1 {
+  padding-left: 16px;
+}
+
+.toc .toc-indent-2 {
+  padding-left: 32px;
+}
+
+/* フッター */
+footer {
+  margin-top: 60px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+  text-align: center;
+  color: #666;
+}
+
+66;
+}
