@@ -165,15 +165,20 @@ http.createServer(async (req, res) => {
     if (req.url.startsWith('/tags/')) {
       const tag = decodeURIComponent(req.url.replace('/tags/', ''));
       const allPosts = await getPosts();
+      const allTopics = await getTopics();
       const filteredPosts = allPosts.filter(p => p.tags.includes(tag));
+      const filteredTopics = allTopics.filter(p => p.tags.includes(tag));
       const postsHtml = filteredPosts.map(p => renderPostCard(p, '/posts')).join('\n');
+      const topicsHtml = filteredTopics.map(p => renderPostCard(p, '/topics')).join('\n');
+      const totalCount = filteredPosts.length + filteredTopics.length;
 
       const content = `
         <div class="tag-page">
           <h2>タグ: ${tag}</h2>
-          <p>${filteredPosts.length}件の記事</p>
+          <p>${totalCount}件の記事</p>
           <div class="post-list">
-            ${postsHtml || '<p>このタグの記事はありません。</p>'}
+            ${postsHtml}${topicsHtml || ''}
+            ${totalCount === 0 ? '<p>このタグの記事はありません。</p>' : ''}
           </div>
         </div>
       `;
