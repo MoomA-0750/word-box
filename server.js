@@ -51,6 +51,7 @@ async function getPostsFromDir(dir, onlyListed = false) {
       date: metadata.date || '',
       emoji: metadata.emoji || '📄',
       tags: metadata.tags || [],
+      quicklook: metadata.quicklook || '',
       listed: listed,
       file: file
     });
