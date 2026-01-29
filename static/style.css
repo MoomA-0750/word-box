@@ -513,6 +513,202 @@ article {
   padding-left: 32px;
 }
 
+/* テーブル */
+.content table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 20px 0;
+  background: #fff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+}
+
+.content table th,
+.content table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #d0d7de;
+  border-right: 1px solid #d0d7de;
+}
+
+.content table th:last-child,
+.content table td:last-child {
+  border-right: none;
+}
+
+.content table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.content table th {
+  background: #f6f8fa;
+  font-weight: 600;
+  color: #1f2328;
+}
+
+/* 角丸を適用 */
+.content table thead tr:first-child th:first-child {
+  border-top-left-radius: 5px;
+}
+
+.content table thead tr:first-child th:last-child {
+  border-top-right-radius: 5px;
+}
+
+.content table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 5px;
+}
+
+.content table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 5px;
+}
+
+.content table tr:nth-child(even) {
+  background: #f6f8fa;
+}
+
+.content table tbody tr:hover {
+  background: #f0f4f8;
+}
+
+/* 打ち消し線 */
+.content del {
+  color: #656d76;
+  text-decoration: line-through;
+}
+
+/* チェックボックスリスト */
+.content .checkbox-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.content .checkbox-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.content .checkbox-list input[type="checkbox"] {
+  /* ネイティブスタイルをリセット */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  /* カスタムスタイル */
+  margin-top: 4px;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  border: 2px solid #d0d7de;
+  border-radius: 3px;
+  background: #fff;
+  cursor: default;
+  position: relative;
+}
+
+.content .checkbox-list input[type="checkbox"]:checked {
+  background: #0969da;
+  border-color: #0969da;
+}
+
+.content .checkbox-list input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.content .checkbox-checked {
+  color: #656d76;
+  text-decoration: line-through;
+}
+
+/* コールアウト（共通） */
+.callout {
+  margin: 20px 0;
+  padding: 16px;
+  border-radius: 6px;
+  border-left: 4px solid;
+}
+
+.callout-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.callout-icon {
+  font-size: 18px;
+}
+
+.callout-label {
+  font-size: 14px;
+}
+
+.callout-content {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Note（青） */
+.callout-note {
+  background: #ddf4ff;
+  border-color: #0969da;
+}
+
+.callout-note .callout-label {
+  color: #0969da;
+}
+
+/* Tip（緑） */
+.callout-tip {
+  background: #dafbe1;
+  border-color: #1a7f37;
+}
+
+.callout-tip .callout-label {
+  color: #1a7f37;
+}
+
+/* Important（紫） */
+.callout-important {
+  background: #fbefff;
+  border-color: #8250df;
+}
+
+.callout-important .callout-label {
+  color: #8250df;
+}
+
+/* Warning（黄） */
+.callout-warning {
+  background: #fff8c5;
+  border-color: #9a6700;
+}
+
+.callout-warning .callout-label {
+  color: #9a6700;
+}
+
+/* Caution（赤） */
+.callout-caution {
+  background: #ffebe9;
+  border-color: #cf222e;
+}
+
+.callout-caution .callout-label {
+  color: #cf222e;
+}
+
 /* フッター */
 footer {
   margin-top: 60px;
@@ -520,7 +716,4 @@ footer {
   border-top: 1px solid #ddd;
   text-align: center;
   color: #666;
-}
-
-66;
 }
