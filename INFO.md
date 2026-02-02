@@ -1,0 +1,241 @@
+# WordBox - プロジェクト情報
+
+## プロジェクト概要
+
+**プロジェクト名**: WordBox
+**種別**: シンプルなMarkdownブログシステム
+**目的**: オフライン環境（ネットワークから隔離されたRHEL 10サーバー）で動作する、Node.js製のブログ
+
+## 環境の制約条件
+
+### ネットワーク制約
+- **完全オフライン環境**: サーバーはインターネットに接続できない
+- **npmパッケージインストール不可**: 外部からのパッケージ取得ができない
+- **利用可能なリソース**:
+  - RHEL 10のISOレポジトリ (ローカル)
+  - VS Code (Windows側にインストール済み)
+  - VS Codeの`node_modules`からライブラリを抽出して利用
+
+### 使用技術
+- **Node.js**: v20.19.2
+- **外部依存**: なし (npmパッケージは全てVS Codeから抽出)
+- **改行コード**: LF (CRLFだとFront Matterパーサーが動作しない)
+
+## 使用しているVS Code由来のライブラリ
+
+以下のモジュールをVS Codeの`C:\Program Files\Microsoft VS Code\resources\app\node_modules`から抽出:
+
+```
+- fs-extra (ファイル操作の拡張)
+- graceful-fs (fs-extraの依存)
+- jsonfile (fs-extraの依存)
+- universalify (fs-extraの依存)
+- micromatch (ファイルパターンマッチング)
+- picomatch (micromatchの依存)
+- braces (micromatchの依存)
+- fill-range (bracesの依存)
+- to-regex-range (fill-rangeの依存)
+- is-number (fill-rangeの依存)
+- is-extglob (micromatchの依存)
+- is-glob (micromatchの依存)
+- katex (数式レンダリング、未使用だが将来用)
+- uuid (UUID生成、未使用だが将来用)
+- semver (バージョン管理、未使用だが将来用)
+- js-base64 (Base64エンコード、未使用だが将来用)
+```
+
+## プロジェクト構造
+
+```
+wordbox/
+├── node_modules/          # VS Codeから抽出したモジュール
+├── lib/
+│   ├── frontmatter.js    # Front Matter (YAML風メタデータ) パーサー
+│   └── markdown.js       # Markdownパーサー
+├── posts/                # Markdown記事ファイル
+├── topics/               # トピック記事ファイル
+├── templates/            # HTMLテンプレート
+│   ├── layout.html       # 全体レイアウト
+│   ├── post.html         # 記事ページ
+│   └── index.html        # トップページ
+├── static/               # 静的ファイル
+│   ├── style.css         # スタイルシート
+│   ├── code-copy.js      # コードコピー・カードクリック機能
+│   └── images/           # 画像ディレクトリ
+├── server.js             # HTTPサーバー (動的生成型)
+└── INFO.md               # このファイル
+```
+
+## Front Matter仕様
+
+記事ファイルの先頭に以下の形式でメタデータを記述:
+
+```markdown
+---
+title: 記事タイトル
+date: 2025-01-22
+emoji: 🚀
+tags: ["tag1", "tag2"]
+listed: true
+quicklook: 記事カード用の短い説明
+---
+記事本文...
+```
+
+### フィールド一覧
+
+| フィールド | 型 | デフォルト | 説明 |
+|-----------|------|-----------|------|
+| title | string | "Untitled" | 記事タイトル |
+| date | string | "" | 日付 (YYYY-MM-DD形式推奨) |
+| emoji | string | "📄" | 記事アイコン |
+| tags | string[] | [] | タグ配列 (JSON形式) |
+| listed | boolean | true | 一覧に表示するか |
+| quicklook | string | "" | 記事カードのサブタイトル |
+
+## Markdown記法
+
+### 基本記法
+
+| 記法 | 説明 |
+|------|------|
+| `# 見出し` | H1〜H5 (#の数で指定) |
+| `**太字**` | 強調 (太字) |
+| `*斜体*` | 強調 (斜体) |
+| `~~打ち消し~~` | 打ち消し線 |
+| `` `code` `` | インラインコード |
+| `[text](url)` | リンク |
+| `![alt](url)` | 画像 |
+| `---` | 水平線 |
+
+### リスト
+
+```markdown
+- 項目1
+  - ネスト項目
+- 項目2
+
+1. 番号付き
+2. リスト
+
+- [ ] 未完了タスク
+- [x] 完了タスク
+```
+
+### テーブル
+
+```markdown
+| 左寄せ | 中央 | 右寄せ |
+|:-------|:----:|-------:|
+| データ | データ | データ |
+```
+
+### コードブロック
+
+````markdown
+```言語名
+コード
+```
+````
+
+### カスタムブロック
+
+**外部リンク (ブックマークカード)**:
+```markdown
+:::bookmark
+https://example.com
+title: カスタムタイトル
+icon: 📚
+:::
+```
+
+**内部記事リンク (記事カード)**:
+```markdown
+:::article
+記事のslug名
+:::
+```
+
+**目次**:
+```markdown
+:::contents
+:::
+```
+
+**コールアウト (GitHubスタイル)**:
+```markdown
+> [!NOTE]
+> ノート内容
+
+> [!TIP]
+> ヒント内容
+
+> [!IMPORTANT]
+> 重要な内容
+
+> [!WARNING]
+> 警告内容
+
+> [!CAUTION]
+> 注意内容
+```
+
+## ルーティング
+
+| パス | 説明 |
+|------|------|
+| `/` | トップページ (記事一覧) |
+| `/posts/:slug` | 記事ページ |
+| `/topics` | トピック一覧ページ |
+| `/topics/:slug` | トピック記事ページ |
+| `/tags/:tag` | タグフィルタページ |
+| `/static/*` | 静的ファイル配信 |
+
+## 技術的な特徴
+
+### 動的生成型
+- ビルドプロセスなし
+- リクエストごとにMarkdownをHTMLに変換
+- 記事追加時はファイルを置くだけ (再起動不要)
+
+### 自作コンポーネント
+- **Markdownパーサー**: 完全自作 (`lib/markdown.js`)
+- **Front Matterパーサー**: YAML風の簡易パーサー (`lib/frontmatter.js`)
+- **テンプレートエンジン**: シンプルな`{{variable}}`置換
+
+### セキュリティ
+- HTMLエスケープ処理
+- XSS対策
+
+## 運用方法
+
+### サーバー起動
+```bash
+cd ~/Documents/wordbox
+node server.js
+```
+
+### 記事追加
+1. `posts/`または`topics/`ディレクトリに`.md`ファイルを作成 (LF改行)
+2. Front Matterを記述
+3. Markdownで本文を書く
+4. 画像は`static/images/`に配置
+
+### アクセス
+- `http://localhost:3000` または設定されたIPアドレス
+
+## 既知の制約
+
+1. **改行コード**: 記事ファイルは**必ずLF**で保存 (CRLFだとFront Matterが認識されない)
+2. **静的ファイルのキャッシュ**: なし (毎回ファイル読み込み)
+3. **エラーハンドリング**: 最小限
+
+## 今後の拡張案 (未実装)
+
+- ページネーション
+- 検索機能
+- RSSフィード
+- サイトマップ
+- ダークモード
+- 記事のドラフト機能
+- 管理画面
