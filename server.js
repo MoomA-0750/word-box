@@ -63,14 +63,60 @@ async function getPostsFromDir(dir, onlyListed = false) {
   return posts;
 }
 
-// 記事一覧取得（後方互換）
+// 記事一覧取得
 async function getPosts(onlyListed = false) {
-  return getPostsFromDir('./posts', onlyListed);
+  return getPostsFromDir('./content/posts', onlyListed);
 }
 
 // トピック一覧取得
 async function getTopics(onlyListed = false) {
-  return getPostsFromDir('./topics', onlyListed);
+  return getPostsFromDir('./content/topics', onlyListed);
+}
+
+// マガジン一覧取得
+async function getMagazines(onlyListed = false) {
+  const dir = './content/magazines';
+  const files = await fs.readdir(dir);
+  const magazines = [];
+
+  for (const file of files) {
+    if (!file.endsWith('.md')) continue;
+
+    const content = await fs.readFile(`${dir}/${file}`, 'utf8');
+    const { metadata, content: body } = parseFrontMatter(content);
+
+    const listed = metadata.listed !== false;
+    if (onlyListed && !listed) continue;
+
+    magazines.push({
+      slug: file.replace('.md', ''),
+      title: metadata.title || 'Untitled',
+      emoji: metadata.emoji || '📚',
+      description: metadata.description || '',
+      articles: metadata.articles || [],
+      listed: listed,
+      body: body.trim()
+    });
+  }
+
+  return magazines;
+}
+
+// 特定の記事が含まれるマガジンを取得
+async function getMagazineForArticle(articleSlug) {
+  const magazines = await getMagazines();
+  for (const magazine of magazines) {
+    const index = magazine.articles.indexOf(articleSlug);
+    if (index !== -1) {
+      return {
+        magazine,
+        currentIndex: index,
+        prevSlug: index > 0 ? magazine.articles[index - 1] : null,
+        nextSlug: index < magazine.articles.length - 1 ? magazine.articles[index + 1] : null
+      };
+    }
+  }
+  return null;
 }
 
 // タグHTML生成
@@ -95,6 +141,84 @@ function renderPostCard(post, urlPrefix) {
   </article>`;
 }
 
+// マガジン目次HTML生成（記事ページトップ用）
+function renderMagazineToc(magazineInfo, allPosts) {
+  if (!magazineInfo) return '';
+
+  const { magazine, currentIndex } = magazineInfo;
+
+  const tocItems = magazine.articles.map((articleSlug, index) => {
+    const post = allPosts.find(p => p.slug === articleSlug);
+    const title = post ? post.title : articleSlug;
+    const isCurrent = index === currentIndex;
+
+    if (isCurrent) {
+      return `<li class="magazine-toc-item magazine-toc-current">
+        <span class="magazine-toc-number">${index + 1}</span>
+        <span class="magazine-toc-title">${title}</span>
+        <span class="magazine-toc-reading">読んでいます</span>
+      </li>`;
+    } else {
+      return `<li class="magazine-toc-item">
+        <span class="magazine-toc-number">${index + 1}</span>
+        <a href="/posts/${articleSlug}" class="magazine-toc-title">${title}</a>
+      </li>`;
+    }
+  }).join('\n');
+
+  return `<div class="magazine-toc">
+    <div class="magazine-toc-header">
+      <a href="/magazines/${magazine.slug}" class="magazine-toc-magazine-link">
+        <span class="magazine-toc-emoji">${magazine.emoji}</span>
+        <span class="magazine-toc-magazine-title">${magazine.title}</span>
+      </a>
+    </div>
+    <ol class="magazine-toc-list">
+      ${tocItems}
+    </ol>
+  </div>`;
+}
+
+// マガジンナビゲーションHTML生成（記事ページ下部用）
+function renderMagazineNav(magazineInfo, allPosts) {
+  if (!magazineInfo) return '';
+
+  const { magazine, currentIndex, prevSlug, nextSlug } = magazineInfo;
+  const prevPost = prevSlug ? allPosts.find(p => p.slug === prevSlug) : null;
+  const nextPost = nextSlug ? allPosts.find(p => p.slug === nextSlug) : null;
+
+  let navHtml = `<nav class="magazine-nav">
+    <div class="magazine-nav-header">
+      <a href="/magazines/${magazine.slug}" class="magazine-nav-title">
+        <span class="magazine-nav-emoji">${magazine.emoji}</span>
+        <span>${magazine.title}</span>
+      </a>
+      <span class="magazine-nav-progress">${currentIndex + 1} / ${magazine.articles.length}</span>
+    </div>
+    <div class="magazine-nav-links">`;
+
+  if (prevPost) {
+    navHtml += `<a href="/posts/${prevPost.slug}" class="magazine-nav-prev">
+      <span class="magazine-nav-label">前の記事</span>
+      <span class="magazine-nav-article-title">${prevPost.title}</span>
+    </a>`;
+  } else {
+    navHtml += `<div class="magazine-nav-prev magazine-nav-disabled"></div>`;
+  }
+
+  if (nextPost) {
+    navHtml += `<a href="/posts/${nextPost.slug}" class="magazine-nav-next">
+      <span class="magazine-nav-label">次の記事</span>
+      <span class="magazine-nav-article-title">${nextPost.title}</span>
+    </a>`;
+  } else {
+    navHtml += `<div class="magazine-nav-next magazine-nav-disabled"></div>`;
+  }
+
+  navHtml += `</div></nav>`;
+  return navHtml;
+}
+
 // 記事ページレンダリング
 async function renderArticlePage(dir, slug, res) {
   const mdFile = `${dir}/${slug}.md`;
@@ -108,7 +232,17 @@ async function renderArticlePage(dir, slug, res) {
   const { metadata, content: markdown } = parseFrontMatter(content);
 
   const allPosts = await getPosts();
-  const html = parseMarkdown(markdown, allPosts);
+  const allMagazines = await getMagazines();
+  const html = parseMarkdown(markdown, allPosts, allMagazines);
+
+  // マガジン情報を取得（postsディレクトリの記事のみ）
+  let magazineTocHtml = '';
+  let magazineNavHtml = '';
+  if (dir === './content/posts') {
+    const magazineInfo = await getMagazineForArticle(slug);
+    magazineTocHtml = renderMagazineToc(magazineInfo, allPosts);
+    magazineNavHtml = renderMagazineNav(magazineInfo, allPosts);
+  }
 
   const postTemplate = await fs.readFile('./templates/post.html', 'utf8');
   const postHtml = applyTemplate(postTemplate, {
@@ -116,7 +250,9 @@ async function renderArticlePage(dir, slug, res) {
     date: metadata.date || '',
     emoji: metadata.emoji || '📄',
     tags: renderTagsHtml(metadata.tags),
-    content: html
+    content: html,
+    magazineToc: magazineTocHtml,
+    magazineNav: magazineNavHtml
   });
 
   const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
@@ -193,6 +329,113 @@ http.createServer(async (req, res) => {
       return res.end(html);
     }
 
+    // マガジン一覧ページ
+    if (req.url === '/magazines' || req.url === '/magazines/') {
+      const magazines = await getMagazines(true);
+      const allPosts = await getPosts();
+
+      const magazinesHtml = magazines.map(mag => {
+        const articleCount = mag.articles.length;
+        return `<article class="magazine-card">
+          <div class="magazine-emoji">${mag.emoji}</div>
+          <div class="magazine-info">
+            <h3><a href="/magazines/${mag.slug}">${mag.title}</a></h3>
+            <p class="magazine-description">${mag.description}</p>
+            <div class="magazine-meta">
+              <span>${articleCount}件の記事</span>
+            </div>
+          </div>
+        </article>`;
+      }).join('\n');
+
+      const content = `
+        <div class="magazine-page">
+          <h2>マガジン</h2>
+          <div class="magazine-list">
+            ${magazinesHtml || '<p>マガジンはまだありません。</p>'}
+          </div>
+        </div>
+      `;
+
+      const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
+      const html = applyTemplate(layoutTemplate, {
+        title: 'マガジン - WordBox',
+        content: content
+      });
+
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(html);
+    }
+
+    // マガジン詳細ページ
+    if (req.url.startsWith('/magazines/')) {
+      const slug = req.url.replace('/magazines/', '');
+      const magazines = await getMagazines();
+      const magazine = magazines.find(m => m.slug === slug);
+
+      if (!magazine) {
+        res.writeHead(404);
+        return res.end('Not Found');
+      }
+
+      const allPosts = await getPosts();
+
+      // 記事リストを順序通りに生成
+      const articlesHtml = magazine.articles.map((articleSlug, index) => {
+        const post = allPosts.find(p => p.slug === articleSlug);
+        if (post) {
+          return `<div class="magazine-article-item">
+            <span class="magazine-article-number">${index + 1}</span>
+            <div class="magazine-article-info">
+              <a href="/posts/${post.slug}">${post.title}</a>
+              <time>${post.date}</time>
+            </div>
+          </div>`;
+        } else {
+          return `<div class="magazine-article-item magazine-article-notfound">
+            <span class="magazine-article-number">${index + 1}</span>
+            <div class="magazine-article-info">
+              <span>${articleSlug} (見つかりません)</span>
+            </div>
+          </div>`;
+        }
+      }).join('\n');
+
+      // マガジン本文をMarkdownパース
+      const bodyHtml = magazine.body ? parseMarkdown(magazine.body, allPosts) : '';
+
+      const content = `
+        <div class="magazine-detail">
+          <header class="magazine-header">
+            <div class="magazine-header-emoji">${magazine.emoji}</div>
+            <div class="magazine-header-text">
+              <h1>${magazine.title}</h1>
+              <p class="magazine-description">${magazine.description}</p>
+              <div class="magazine-meta">
+                <span>${magazine.articles.length}件の記事</span>
+              </div>
+            </div>
+          </header>
+          ${bodyHtml ? `<div class="magazine-body content">${bodyHtml}</div>` : ''}
+          <div class="magazine-articles">
+            <h2>収録記事</h2>
+            <div class="magazine-article-list">
+              ${articlesHtml}
+            </div>
+          </div>
+        </div>
+      `;
+
+      const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
+      const html = applyTemplate(layoutTemplate, {
+        title: `${magazine.title} - WordBox`,
+        content: content
+      });
+
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(html);
+    }
+
     // トピック一覧ページ
     if (req.url === '/topics' || req.url === '/topics/') {
       const topics = await getTopics(true);
@@ -220,13 +463,13 @@ http.createServer(async (req, res) => {
     // トピック記事ページ
     if (req.url.startsWith('/topics/')) {
       const slug = req.url.replace('/topics/', '');
-      return renderArticlePage('./topics', slug, res);
+      return renderArticlePage('./content/topics', slug, res);
     }
 
     // 記事ページ
     if (req.url.startsWith('/posts/')) {
       const slug = req.url.replace('/posts/', '');
-      return renderArticlePage('./posts', slug, res);
+      return renderArticlePage('./content/posts', slug, res);
     }
 
     // 404

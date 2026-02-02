@@ -450,6 +450,75 @@ article {
   flex-shrink: 0;
 }
 
+/* マガジン埋め込みカード */
+.magazine-card-embed {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  margin: 20px 0;
+  border: 1px solid #e9d5ff;
+  border-left: 4px solid #8250df;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+  background: linear-gradient(135deg, #faf5ff 0%, #f6f8fa 100%);
+}
+
+.magazine-card-embed:hover {
+  border-color: #8250df;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(130, 80, 223, 0.15);
+  transform: translateY(-2px);
+}
+
+.magazine-card-embed.magazine-card-notfound {
+  border-left-color: #d1242f;
+  background: #fff1f0;
+  cursor: not-allowed;
+}
+
+.magazine-card-icon {
+  font-size: 36px;
+  flex-shrink: 0;
+}
+
+.magazine-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.magazine-card-title {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 6px;
+  color: #1f2328;
+}
+
+.magazine-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #656d76;
+}
+
+.magazine-card-description {
+  color: #555;
+}
+
+.magazine-card-count {
+  color: #8250df;
+  font-weight: 500;
+}
+
+.magazine-card-arrow {
+  font-size: 24px;
+  color: #8250df;
+  flex-shrink: 0;
+}
+
 /* タグページ */
 .tag-page h2 {
   margin-bottom: 10px;
@@ -707,6 +776,386 @@ article {
 
 .callout-caution .callout-label {
   color: #cf222e;
+}
+
+/* マガジン一覧ページ */
+.magazine-page h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.magazine-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.magazine-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  transition: all 0.2s;
+}
+
+.magazine-card:hover {
+  border-color: #8250df;
+  box-shadow: 0 2px 8px rgba(130, 80, 223, 0.1);
+  transform: translateY(-2px);
+}
+
+.magazine-emoji {
+  font-size: 48px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.magazine-info {
+  flex: 1;
+}
+
+.magazine-info h3 {
+  margin: 0 0 8px 0;
+}
+
+.magazine-info h3 a {
+  color: #333;
+  text-decoration: none;
+}
+
+.magazine-info h3 a:hover {
+  color: #8250df;
+}
+
+.magazine-card:hover .magazine-info h3 a {
+  color: #8250df;
+}
+
+.magazine-description {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.magazine-meta {
+  font-size: 13px;
+  color: #888;
+}
+
+/* マガジン詳細ページ */
+.magazine-detail {
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.magazine-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+.magazine-header-emoji {
+  font-size: 64px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.magazine-header-text {
+  flex: 1;
+}
+
+.magazine-header-text h1 {
+  margin: 0 0 10px 0;
+}
+
+.magazine-header-text .magazine-description {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.magazine-body {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.magazine-articles h2 {
+  font-size: 1.2em;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.magazine-article-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.magazine-article-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #f9f9f9;
+  transition: all 0.2s;
+}
+
+.magazine-article-item:hover {
+  background: #fff;
+  border-color: #0969da;
+}
+
+.magazine-article-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #e1e8ed;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.magazine-article-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.magazine-article-info a {
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.magazine-article-info a:hover {
+  color: #0969da;
+}
+
+.magazine-article-info time {
+  font-size: 13px;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.magazine-article-notfound {
+  background: #fff1f0;
+  border-color: #ffccc7;
+}
+
+.magazine-article-notfound span {
+  color: #cf222e;
+}
+
+/* 記事ページ内マガジン目次（トップ） */
+.magazine-toc {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8f6ff 0%, #f6f8fa 100%);
+  border: 1px solid #d8b4fe;
+  border-radius: 8px;
+}
+
+.magazine-toc-header {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e9d5ff;
+}
+
+.magazine-toc-magazine-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #7c3aed;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.magazine-toc-magazine-link:hover {
+  color: #5b21b6;
+}
+
+.magazine-toc-emoji {
+  font-size: 20px;
+}
+
+.magazine-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.magazine-toc-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.magazine-toc-item:hover {
+  background: rgba(124, 58, 237, 0.05);
+}
+
+.magazine-toc-current {
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid #c4b5fd;
+}
+
+.magazine-toc-current:hover {
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.magazine-toc-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: #e9d5ff;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+
+.magazine-toc-current .magazine-toc-number {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.magazine-toc-title {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+  text-decoration: none;
+}
+
+a.magazine-toc-title:hover {
+  color: #7c3aed;
+}
+
+.magazine-toc-current .magazine-toc-title {
+  font-weight: 600;
+  color: #5b21b6;
+}
+
+.magazine-toc-reading {
+  font-size: 11px;
+  color: #7c3aed;
+  background: #ede9fe;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+/* 記事ページ内マガジンナビゲーション（下部） */
+.magazine-nav {
+  margin-top: 40px;
+  padding: 20px;
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+}
+
+.magazine-nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #d0d7de;
+}
+
+.magazine-nav-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.magazine-nav-title:hover {
+  color: #8250df;
+}
+
+.magazine-nav-emoji {
+  font-size: 20px;
+}
+
+.magazine-nav-progress {
+  font-size: 13px;
+  color: #666;
+  background: #e1e8ed;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.magazine-nav-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.magazine-nav-prev,
+.magazine-nav-next {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.magazine-nav-prev:hover,
+.magazine-nav-next:hover {
+  border-color: #0969da;
+  background: #f0f6fc;
+}
+
+.magazine-nav-next {
+  text-align: right;
+}
+
+.magazine-nav-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.magazine-nav-article-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0969da;
+}
+
+.magazine-nav-disabled {
+  visibility: hidden;
 }
 
 /* フッター */
