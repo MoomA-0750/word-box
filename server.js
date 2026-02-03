@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const { parseFrontMatter } = require('./lib/frontmatter');
 const { parseMarkdown } = require('./lib/markdown');
+const searchEngine = require('./lib/search');
 
 const PORT = 3000;
 const MIME_TYPES = {
@@ -19,6 +20,79 @@ const MIME_TYPES = {
   '.webp': 'image/webp',
   '.ico': 'image/x-icon',
 };
+
+// 検索インデックス構築
+async function buildSearchIndex() {
+  console.log('Building search index...');
+  searchEngine.clear();
+
+  // 記事
+  const postsDir = './content/posts';
+  if (await fs.pathExists(postsDir)) {
+    const files = await fs.readdir(postsDir);
+    for (const file of files) {
+      if (!file.endsWith('.md')) continue;
+      const content = await fs.readFile(`${postsDir}/${file}`, 'utf8');
+      const { metadata, content: body } = parseFrontMatter(content);
+      if (metadata.listed === false) continue;
+
+      searchEngine.addDocument({
+        id: file.replace('.md', ''),
+        title: metadata.title || 'Untitled',
+        content: body,
+        tags: metadata.tags || [],
+        type: 'post',
+        emoji: metadata.emoji || '📄',
+        date: metadata.date
+      });
+    }
+  }
+
+  // トピック
+  const topicsDir = './content/topics';
+  if (await fs.pathExists(topicsDir)) {
+    const files = await fs.readdir(topicsDir);
+    for (const file of files) {
+      if (!file.endsWith('.md')) continue;
+      const content = await fs.readFile(`${topicsDir}/${file}`, 'utf8');
+      const { metadata, content: body } = parseFrontMatter(content);
+      if (metadata.listed === false) continue;
+
+      searchEngine.addDocument({
+        id: file.replace('.md', ''),
+        title: metadata.title || 'Untitled',
+        content: body,
+        tags: metadata.tags || [],
+        type: 'topic',
+        emoji: metadata.emoji || '📝',
+        date: metadata.date
+      });
+    }
+  }
+  
+  // マガジン
+  const magsDir = './content/magazines';
+  if (await fs.pathExists(magsDir)) {
+    const files = await fs.readdir(magsDir);
+    for (const file of files) {
+      if (!file.endsWith('.md')) continue;
+      const content = await fs.readFile(`${magsDir}/${file}`, 'utf8');
+      const { metadata, content: body } = parseFrontMatter(content);
+      if (metadata.listed === false) continue;
+
+      searchEngine.addDocument({
+        id: file.replace('.md', ''),
+        title: metadata.title || 'Untitled',
+        content: body,
+        tags: [],
+        type: 'magazine',
+        emoji: metadata.emoji || '📚'
+      });
+    }
+  }
+
+  console.log(`Index built with ${searchEngine.documents.length} documents.`);
+}
 
 // テンプレート適用
 function applyTemplate(template, vars) {
@@ -472,6 +546,48 @@ http.createServer(async (req, res) => {
       return renderArticlePage('./content/posts', slug, res);
     }
 
+    // 検索ページ
+    if (req.url.startsWith('/search')) {
+      const urlObj = new URL(req.url, `http://${req.headers.host}`);
+      const query = urlObj.searchParams.get('q') || '';
+      
+      const results = searchEngine.search(query);
+      
+      const resultsHtml = results.map(r => {
+        const doc = r.item;
+        let url = '';
+        if (doc.type === 'post') url = `/posts/${doc.id}`;
+        else if (doc.type === 'topic') url = `/topics/${doc.id}`;
+        else if (doc.type === 'magazine') url = `/magazines/${doc.id}`;
+        
+        return `
+        <div class="search-result-item">
+          <h3><a href="${url}"><span class="search-result-emoji">${doc.emoji}</span> ${doc.title}</a></h3>
+          <div class="search-result-meta">
+            <span class="search-result-type">${doc.type}</span>
+            ${doc.date ? `<time>${doc.date}</time>` : ''}
+          </div>
+          <div class="search-result-snippet">${r.snippet}</div>
+        </div>`;
+      }).join('\n') || '<p>該当する記事が見つかりませんでした。</p>';
+
+      const searchTemplate = await fs.readFile('./templates/search.html', 'utf8');
+      const content = applyTemplate(searchTemplate, {
+        query: escapeHtml(query), // XSS対策
+        count: results.length,
+        results: resultsHtml
+      });
+
+      const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
+      const html = applyTemplate(layoutTemplate, {
+        title: `検索: ${query} - WordBox`,
+        content: content
+      });
+
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(html);
+    }
+
     // 404
     res.writeHead(404);
     res.end('Not Found');
@@ -481,6 +597,16 @@ http.createServer(async (req, res) => {
     res.writeHead(500);
     res.end('Server Error: ' + err.message);
   }
-}).listen(PORT, () => {
+}).listen(PORT, async () => {
+  await buildSearchIndex();
   console.log(`Server running at http://localhost:${PORT}`);
 });
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}

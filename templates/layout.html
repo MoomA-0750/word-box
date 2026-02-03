@@ -8,12 +8,20 @@
 </head>
 <body>
   <header>
-    <h1><a href="/">WordBox</a></h1>
-    <nav class="main-nav">
-      <a href="/">ホーム</a>
-      <a href="/magazines">マガジン</a>
-      <a href="/topics">トピック</a>
-    </nav>
+    <div class="header-inner">
+      <h1><a href="/">WordBox</a></h1>
+      <nav class="main-nav">
+        <a href="/">ホーム</a>
+        <a href="/magazines">マガジン</a>
+        <a href="/topics">トピック</a>
+      </nav>
+      <div class="header-search">
+        <form action="/search" method="GET">
+          <input type="text" name="q" placeholder="検索..." aria-label="検索">
+          <button type="submit" aria-label="検索実行">🔍</button>
+        </form>
+      </div>
+    </div>
   </header>
   <main>
     {{content}}

@@ -1,0 +1,15 @@
+<div class="search-page">
+  <div class="search-header">
+    <h1>検索結果</h1>
+    <p>「{{query}}」の検索結果: {{count}}件</p>
+  </div>
+
+  <form action="/search" method="GET" class="search-form-large">
+    <input type="text" name="q" value="{{query}}" placeholder="サイト内を検索..." required>
+    <button type="submit">検索</button>
+  </form>
+
+  <div class="search-results">
+    {{results}}
+  </div>
+</div>

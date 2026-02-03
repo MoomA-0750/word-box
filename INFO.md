@@ -51,13 +51,17 @@ wordbox/
 ├── node_modules/          # VS Codeから抽出したモジュール
 ├── lib/
 │   ├── frontmatter.js    # Front Matter (YAML風メタデータ) パーサー
-│   └── markdown.js       # Markdownパーサー
-├── posts/                # Markdown記事ファイル
-├── topics/               # トピック記事ファイル
+│   ├── markdown.js       # Markdownパーサー
+│   └── search.js         # 全文検索エンジン
+├── content/
+│   ├── posts/            # Markdown記事ファイル
+│   ├── topics/           # トピック記事ファイル
+│   └── magazines/        # マガジン定義ファイル
 ├── templates/            # HTMLテンプレート
 │   ├── layout.html       # 全体レイアウト
 │   ├── post.html         # 記事ページ
-│   └── index.html        # トップページ
+│   ├── index.html        # トップページ
+│   └── search.html       # 検索結果ページ
 ├── static/               # 静的ファイル
 │   ├── style.css         # スタイルシート
 │   ├── code-copy.js      # コードコピー・カードクリック機能
@@ -92,6 +96,8 @@ quicklook: 記事カード用の短い説明
 | tags | string[] | [] | タグ配列 (JSON形式) |
 | listed | boolean | true | 一覧に表示するか |
 | quicklook | string | "" | 記事カードのサブタイトル |
+| description | string | "" | マガジンの説明文 |
+| articles | string[] | [] | マガジン収録記事のslug配列 |
 
 ## Markdown記法
 
@@ -156,6 +162,13 @@ icon: 📚
 :::
 ```
 
+**マガジンリンク (マガジンカード)**:
+```markdown
+:::magazine
+マガジンのslug名
+:::
+```
+
 **目次**:
 ```markdown
 :::contents
@@ -188,7 +201,10 @@ icon: 📚
 | `/posts/:slug` | 記事ページ |
 | `/topics` | トピック一覧ページ |
 | `/topics/:slug` | トピック記事ページ |
+| `/magazines` | マガジン一覧ページ |
+| `/magazines/:slug` | マガジン詳細ページ |
 | `/tags/:tag` | タグフィルタページ |
+| `/search` | 検索結果ページ |
 | `/static/*` | 静的ファイル配信 |
 
 ## 技術的な特徴
@@ -197,6 +213,12 @@ icon: 📚
 - ビルドプロセスなし
 - リクエストごとにMarkdownをHTMLに変換
 - 記事追加時はファイルを置くだけ (再起動不要)
+
+### 全文検索機能
+- **インメモリインデックス**: サーバー起動時に全コンテンツをインデックス化
+- **重み付け検索**: タイトル > タグ > 本文 の優先度でスコアリング
+- **スニペット生成**: 検索語周辺のテキストを抜粋しハイライト表示
+- **Markdown除外**: Markdown構文を除去してプレーンテキストのみを検索対象化
 
 ### 自作コンポーネント
 - **Markdownパーサー**: 完全自作 (`lib/markdown.js`)
@@ -216,7 +238,7 @@ node server.js
 ```
 
 ### 記事追加
-1. `posts/`または`topics/`ディレクトリに`.md`ファイルを作成 (LF改行)
+1. `content/posts/`または`content/topics/`ディレクトリに`.md`ファイルを作成 (LF改行)
 2. Front Matterを記述
 3. Markdownで本文を書く
 4. 画像は`static/images/`に配置
@@ -233,7 +255,6 @@ node server.js
 ## 今後の拡張案 (未実装)
 
 - ページネーション
-- 検索機能
 - RSSフィード
 - サイトマップ
 - ダークモード
