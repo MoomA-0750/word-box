@@ -48,11 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         console.error('コピーに失敗しました:', err);
         button.textContent = 'エラー';
-        setTimeout(() => {
-          button.textContent = 'コピー';
-        }, 2000);
-      }
-    });
+    setTimeout(() => {
+      button.classList.remove('copied');
+      button.textContent = 'コピー';
+    }, 2000);
   });
 });
 

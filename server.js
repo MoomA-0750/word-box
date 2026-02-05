@@ -21,6 +21,28 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon',
 };
 
+// テンプレートキャッシュ
+const templates = {
+  index: '',
+  layout: '',
+  post: '',
+  search: ''
+};
+
+// テンプレート読み込み
+async function loadTemplates() {
+  console.log('Loading templates...');
+  try {
+    templates.index = await fs.readFile('./templates/index.html', 'utf8');
+    templates.layout = await fs.readFile('./templates/layout.html', 'utf8');
+    templates.post = await fs.readFile('./templates/post.html', 'utf8');
+    templates.search = await fs.readFile('./templates/search.html', 'utf8');
+    console.log('Templates loaded.');
+  } catch (err) {
+    console.error('Error loading templates:', err);
+  }
+}
+
 // 検索インデックス構築
 async function buildSearchIndex() {
   console.log('Building search index...');
@@ -318,8 +340,7 @@ async function renderArticlePage(dir, slug, res) {
     magazineNavHtml = renderMagazineNav(magazineInfo, allPosts);
   }
 
-  const postTemplate = await fs.readFile('./templates/post.html', 'utf8');
-  const postHtml = applyTemplate(postTemplate, {
+  const postHtml = applyTemplate(templates.post, {
     title: metadata.title || 'Untitled',
     date: metadata.date || '',
     emoji: metadata.emoji || '📄',
@@ -329,8 +350,7 @@ async function renderArticlePage(dir, slug, res) {
     magazineNav: magazineNavHtml
   });
 
-  const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
-  const finalHtml = applyTemplate(layoutTemplate, {
+  const finalHtml = applyTemplate(templates.layout, {
     title: metadata.title || 'Untitled',
     content: postHtml
   });
@@ -358,11 +378,9 @@ http.createServer(async (req, res) => {
       const posts = await getPosts(true);
       const postsHtml = posts.map(p => renderPostCard(p, '/posts')).join('\n');
 
-      const indexTemplate = await fs.readFile('./templates/index.html', 'utf8');
-      const indexHtml = applyTemplate(indexTemplate, { posts: postsHtml });
+      const indexHtml = applyTemplate(templates.index, { posts: postsHtml });
 
-      const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
-      const html = applyTemplate(layoutTemplate, {
+      const html = applyTemplate(templates.layout, {
         title: 'WordBox',
         content: indexHtml
       });
@@ -393,8 +411,7 @@ http.createServer(async (req, res) => {
         </div>
       `;
 
-      const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
-      const html = applyTemplate(layoutTemplate, {
+      const html = applyTemplate(templates.layout, {
         title: `タグ: ${tag}`,
         content: content
       });
@@ -431,8 +448,7 @@ http.createServer(async (req, res) => {
         </div>
       `;
 
-      const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
-      const html = applyTemplate(layoutTemplate, {
+      const html = applyTemplate(templates.layout, {
         title: 'マガジン - WordBox',
         content: content
       });
@@ -500,8 +516,7 @@ http.createServer(async (req, res) => {
         </div>
       `;
 
-      const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
-      const html = applyTemplate(layoutTemplate, {
+      const html = applyTemplate(templates.layout, {
         title: `${magazine.title} - WordBox`,
         content: content
       });
@@ -524,8 +539,7 @@ http.createServer(async (req, res) => {
         </div>
       `;
 
-      const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
-      const html = applyTemplate(layoutTemplate, {
+      const html = applyTemplate(templates.layout, {
         title: 'トピック - WordBox',
         content: content
       });
@@ -571,15 +585,13 @@ http.createServer(async (req, res) => {
         </div>`;
       }).join('\n') || '<p>該当する記事が見つかりませんでした。</p>';
 
-      const searchTemplate = await fs.readFile('./templates/search.html', 'utf8');
-      const content = applyTemplate(searchTemplate, {
+      const content = applyTemplate(templates.search, {
         query: escapeHtml(query), // XSS対策
         count: results.length,
         results: resultsHtml
       });
 
-      const layoutTemplate = await fs.readFile('./templates/layout.html', 'utf8');
-      const html = applyTemplate(layoutTemplate, {
+      const html = applyTemplate(templates.layout, {
         title: `検索: ${query} - WordBox`,
         content: content
       });
@@ -598,6 +610,7 @@ http.createServer(async (req, res) => {
     res.end('Server Error: ' + err.message);
   }
 }).listen(PORT, async () => {
+  await loadTemplates();
   await buildSearchIndex();
   console.log(`Server running at http://localhost:${PORT}`);
 });
