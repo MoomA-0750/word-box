@@ -5,6 +5,7 @@ const path = require('path');
 const { parseFrontMatter } = require('./lib/frontmatter');
 const { parseMarkdown } = require('./lib/markdown');
 const searchEngine = require('./lib/search');
+const { handleAdminRequest } = require('./lib/admin-router');
 
 const PORT = 3000;
 const MIME_TYPES = {
@@ -363,6 +364,11 @@ async function renderArticlePage(dir, slug, res) {
 http.createServer(async (req, res) => {
   try {
     console.log(`${req.method} ${req.url}`);
+
+    // 管理画面
+    if (req.url.startsWith('/admin')) {
+      return handleAdminRequest(req, res, req.url.split('?')[0], buildSearchIndex);
+    }
 
     // 静的ファイル
     if (req.url.startsWith('/static/')) {

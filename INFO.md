@@ -39,7 +39,7 @@
 - is-extglob (micromatchの依存)
 - is-glob (micromatchの依存)
 - katex (数式レンダリング、未使用だが将来用)
-- uuid (UUID生成、未使用だが将来用)
+- uuid (UUID生成、管理画面で使用)
 - semver (バージョン管理、未使用だが将来用)
 - js-base64 (Base64エンコード、未使用だが将来用)
 ```
@@ -52,7 +52,9 @@ wordbox/
 ├── lib/
 │   ├── frontmatter.js    # Front Matter (YAML風メタデータ) パーサー
 │   ├── markdown.js       # Markdownパーサー
-│   └── search.js         # 全文検索エンジン
+│   ├── search.js         # 全文検索エンジン
+│   ├── admin-router.js   # 管理画面ルーター (HTML/CSS/JS含む)
+│   └── admin-auth.js     # 管理画面認証モジュール
 ├── content/
 │   ├── posts/            # Markdown記事ファイル
 │   ├── topics/           # トピック記事ファイル
@@ -200,6 +202,8 @@ icon: 📚
 
 ## ルーティング
 
+### フロントエンド
+
 | パス | 説明 |
 |------|------|
 | `/` | トップページ (記事一覧) |
@@ -211,6 +215,39 @@ icon: 📚
 | `/tags/:tag` | タグフィルタページ |
 | `/search` | 検索結果ページ |
 | `/static/*` | 静的ファイル配信 |
+
+### 管理画面
+
+| パス | 説明 |
+|------|------|
+| `/admin` | 管理画面トップ |
+| `/admin/login` | ログインページ |
+| `/admin/logout` | ログアウト |
+
+### 管理画面API
+
+| メソッド | パス | 説明 |
+|----------|------|------|
+| GET | `/admin/api/posts` | 記事一覧取得 |
+| POST | `/admin/api/posts` | 記事作成 |
+| GET | `/admin/api/posts/:id` | 記事詳細取得 |
+| PUT | `/admin/api/posts/:id` | 記事更新 |
+| DELETE | `/admin/api/posts/:id` | 記事削除 |
+| GET | `/admin/api/topics` | トピック一覧取得 |
+| POST | `/admin/api/topics` | トピック作成 |
+| GET | `/admin/api/topics/:id` | トピック詳細取得 |
+| PUT | `/admin/api/topics/:id` | トピック更新 |
+| DELETE | `/admin/api/topics/:id` | トピック削除 |
+| GET | `/admin/api/magazines` | マガジン一覧取得 |
+| POST | `/admin/api/magazines` | マガジン作成 |
+| GET | `/admin/api/magazines/:id` | マガジン詳細取得 |
+| PUT | `/admin/api/magazines/:id` | マガジン更新 |
+| DELETE | `/admin/api/magazines/:id` | マガジン削除 |
+| GET | `/admin/api/images` | 画像一覧取得 |
+| POST | `/admin/api/images` | 画像アップロード |
+| DELETE | `/admin/api/images/:filename` | 画像削除 |
+| GET | `/admin/api/tags` | タグ一覧取得 |
+| POST | `/admin/api/rebuild-index` | 検索インデックス再構築 |
 
 ## 技術的な特徴
 
@@ -257,11 +294,47 @@ node server.js
 2. **静的ファイルのキャッシュ**: なし (毎回ファイル読み込み)
 3. **エラーハンドリング**: 最小限
 
+## 管理画面
+
+### 概要
+ブラウザベースの管理画面で、記事・トピック・マガジン・画像を管理できます。
+
+### アクセス方法
+1. `http://localhost:3000/admin` にアクセス
+2. パスワードを入力してログイン
+
+### 認証
+- **デフォルトパスワード**: `admin`
+- **カスタムパスワード**: 環境変数 `WORDBOX_ADMIN_PASSWORD` で設定可能
+- **セッション有効期限**: 24時間
+
+```bash
+# カスタムパスワードでサーバー起動
+WORDBOX_ADMIN_PASSWORD=mysecretpassword node server.js
+```
+
+### 機能一覧
+
+| 機能 | 説明 |
+|------|------|
+| 記事管理 | 記事の一覧表示、作成、編集、削除 |
+| トピック管理 | トピックの一覧表示、作成、編集、削除 |
+| マガジン管理 | マガジンの管理、収録記事の順序設定 |
+| 画像管理 | ドラッグ＆ドロップでアップロード、一覧表示、削除 |
+| タグ一覧 | 使用中のタグと記事数を表示 |
+| 検索インデックス再構築 | 手動で再構築可能 |
+
+### ファイル名について
+- **新規記事作成時**: UUID形式のIDが自動生成される（カスタムIDも設定可能）
+- **画像アップロード時**: ファイル名は自動的にUUID形式に変換される
+
+### エディタ機能
+- Markdownツールバー (太字、斜体、コード、リンク、画像、見出し)
+- 画像挿入モーダル (アップロード済み画像から選択)
+- リアルタイム検索フィルタ
+
 ## 今後の拡張案 (未実装)
 
 - ページネーション
 - RSSフィード
 - サイトマップ
-- ダークモード
-- 記事のドラフト機能
-- 管理画面
