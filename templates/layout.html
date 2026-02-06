@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{title}}</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script>
+    // システム設定に基づいて初期テーマを適用（フラッシュ防止）
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
 </head>
 <body>
   <header>
@@ -21,6 +27,9 @@
           <button type="submit" aria-label="検索実行">🔍</button>
         </form>
       </div>
+      <button class="theme-toggle" id="themeToggle" aria-label="テーマ切替">
+        <span class="theme-toggle-icon"></span>
+      </button>
     </div>
   </header>
   <main>
@@ -29,6 +38,6 @@
   <footer>
     <p>&copy; 2025 WordBox</p>
   </footer>
-  <script src="/static/code-copy.js"></script>
+  <script src="/static/main.js"></script>
 </body>
 </html>

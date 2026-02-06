@@ -30,9 +30,8 @@
   --tag-hover: #c9d1d9;
 }
 
-/* ダークモード設定（システム準拠） */
-@media (prefers-color-scheme: dark) {
-  :root {
+/* ダークモード設定 */
+[data-theme="dark"] {
     --bg-color: #1a1a1a;
     --text-color: #e0e0e0;
     --text-secondary: #a0a0a0;
@@ -59,7 +58,6 @@
     --tag-bg: #333;
     --tag-text: #e0e0e0;
     --tag-hover: #444;
-  }
 }
 
 * {
@@ -265,11 +263,9 @@ header h1 a:hover {
   font-weight: 600;
 }
 
-@media (prefers-color-scheme: dark) {
-  .search-result-snippet mark {
-    background: #665c26;
-    color: #fff;
-  }
+[data-theme="dark"] .search-result-snippet mark {
+  background: #665c26;
+  color: #fff;
 }
 
 /* スマホ対応 */
@@ -985,14 +981,12 @@ article {
   color: #0969da;
 }
 
-@media (prefers-color-scheme: dark) {
-  .callout-note {
-    background: rgba(9, 105, 218, 0.15);
-    border-color: #58a6ff;
-  }
-  .callout-note .callout-label {
-    color: #58a6ff;
-  }
+[data-theme="dark"] .callout-note {
+  background: rgba(9, 105, 218, 0.15);
+  border-color: #58a6ff;
+}
+[data-theme="dark"] .callout-note .callout-label {
+  color: #58a6ff;
 }
 
 /* Tip（緑） */
@@ -1005,14 +999,12 @@ article {
   color: #1a7f37;
 }
 
-@media (prefers-color-scheme: dark) {
-  .callout-tip {
-    background: rgba(26, 127, 55, 0.15);
-    border-color: #3fb950;
-  }
-  .callout-tip .callout-label {
-    color: #3fb950;
-  }
+[data-theme="dark"] .callout-tip {
+  background: rgba(26, 127, 55, 0.15);
+  border-color: #3fb950;
+}
+[data-theme="dark"] .callout-tip .callout-label {
+  color: #3fb950;
 }
 
 /* Important（紫） */
@@ -1025,14 +1017,12 @@ article {
   color: #8250df;
 }
 
-@media (prefers-color-scheme: dark) {
-  .callout-important {
-    background: rgba(130, 80, 223, 0.15);
-    border-color: #a47bf2;
-  }
-  .callout-important .callout-label {
-    color: #a47bf2;
-  }
+[data-theme="dark"] .callout-important {
+  background: rgba(130, 80, 223, 0.15);
+  border-color: #a47bf2;
+}
+[data-theme="dark"] .callout-important .callout-label {
+  color: #a47bf2;
 }
 
 /* Warning（黄） */
@@ -1045,14 +1035,12 @@ article {
   color: #9a6700;
 }
 
-@media (prefers-color-scheme: dark) {
-  .callout-warning {
-    background: rgba(154, 103, 0, 0.15);
-    border-color: #d29922;
-  }
-  .callout-warning .callout-label {
-    color: #d29922;
-  }
+[data-theme="dark"] .callout-warning {
+  background: rgba(154, 103, 0, 0.15);
+  border-color: #d29922;
+}
+[data-theme="dark"] .callout-warning .callout-label {
+  color: #d29922;
 }
 
 /* Caution（赤） */
@@ -1065,14 +1053,12 @@ article {
   color: #cf222e;
 }
 
-@media (prefers-color-scheme: dark) {
-  .callout-caution {
-    background: rgba(207, 34, 46, 0.15);
-    border-color: #f85149;
-  }
-  .callout-caution .callout-label {
-    color: #f85149;
-  }
+[data-theme="dark"] .callout-caution {
+  background: rgba(207, 34, 46, 0.15);
+  border-color: #f85149;
+}
+[data-theme="dark"] .callout-caution .callout-label {
+  color: #f85149;
 }
 
 /* マガジン一覧ページ */
@@ -1269,10 +1255,8 @@ article {
   border-radius: 8px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .magazine-toc {
-    border-color: var(--magazine-color);
-  }
+[data-theme="dark"] .magazine-toc {
+  border-color: var(--magazine-color);
 }
 
 .magazine-toc-header {
@@ -1281,10 +1265,8 @@ article {
   border-bottom: 1px solid #e9d5ff;
 }
 
-@media (prefers-color-scheme: dark) {
-  .magazine-toc-header {
-    border-color: var(--border-color);
-  }
+[data-theme="dark"] .magazine-toc-header {
+  border-color: var(--border-color);
 }
 
 .magazine-toc-magazine-link {
@@ -1332,10 +1314,8 @@ article {
   border: 1px solid #c4b5fd;
 }
 
-@media (prefers-color-scheme: dark) {
-  .magazine-toc-current {
-    border-color: var(--magazine-color);
-  }
+[data-theme="dark"] .magazine-toc-current {
+  border-color: var(--magazine-color);
 }
 
 .magazine-toc-current:hover {
@@ -1356,11 +1336,9 @@ article {
   flex-shrink: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .magazine-toc-number {
-    background: rgba(130, 80, 223, 0.2);
-    color: var(--magazine-color);
-  }
+[data-theme="dark"] .magazine-toc-number {
+  background: rgba(130, 80, 223, 0.2);
+  color: var(--magazine-color);
 }
 
 .magazine-toc-current .magazine-toc-number {
@@ -1478,6 +1456,34 @@ a.magazine-toc-title:hover {
 
 .magazine-nav-disabled {
   visibility: hidden;
+}
+
+/* テーマ切替ボタン */
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.theme-toggle:hover {
+  background: var(--tag-bg);
+}
+
+.theme-toggle-icon::before {
+  content: '🌙';
+  font-size: 18px;
+}
+
+[data-theme="dark"] .theme-toggle-icon::before {
+  content: '☀️';
 }
 
 /* フッター */
