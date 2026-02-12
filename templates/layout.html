@@ -6,8 +6,14 @@
   <title>{{title}}</title>
   <link rel="stylesheet" href="/static/style.css">
   <script>
-    // システム設定に基づいて初期テーマを適用（フラッシュ防止）
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    // localStorageの設定を優先、なければシステム設定に基づいて初期テーマを適用（フラッシュ防止）
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (savedTheme === 'light') {
+      // ライトモードが明示的に保存されている場合は何もしない
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      // 保存された設定がない場合のみシステム設定を適用
       document.documentElement.setAttribute('data-theme', 'dark');
     }
   </script>

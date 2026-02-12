@@ -1,15 +1,27 @@
 // static/main.js
 
 document.addEventListener('DOMContentLoaded', () => {
+  // テーマ初期化（ページ読み込み時にlocalStorageから復元）
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else if (savedTheme === 'light') {
+    document.documentElement.removeAttribute('data-theme');
+  }
+
   // テーマ切替
   const themeToggle = document.getElementById('themeToggle');
   if (themeToggle) {
     themeToggle.addEventListener('click', () => {
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       if (isDark) {
+        // ライトモードに切り替え
         document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
       } else {
+        // ダークモードに切り替え
         document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
       }
     });
   }
