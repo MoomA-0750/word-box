@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WordBox Admin</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="admin-page">
+  <div class="admin-container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>📦 WordBox</h1>
+        <span class="badge">Admin</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-section="posts">📝 記事</a>
+        <a href="#" class="nav-item" data-section="topics">📚 トピック</a>
+        <a href="#" class="nav-item" data-section="magazines">📰 マガジン</a>
+        <a href="#" class="nav-item" data-section="images">🖼️ 画像</a>
+        <a href="#" class="nav-item" data-section="tags">🏷️ タグ</a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="/" target="_blank" class="nav-item">🌐 サイトを見る</a>
+        <a href="/admin/logout" class="nav-item logout">🚪 ログアウト</a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="main-header">
+        <h2 id="sectionTitle">記事</h2>
+        <div class="header-actions">
+          <button class="btn btn-primary" id="newBtn">+ 新規作成</button>
+          <button class="btn btn-secondary" id="rebuildBtn" title="検索インデックスを再構築">🔄 再構築</button>
+        </div>
+      </header>
+
+      <div class="content-area">
+        <!-- 一覧表示 -->
+        <div id="listView" class="list-view">
+          <div class="list-header">
+            <input type="text" id="searchInput" placeholder="検索..." class="search-input">
+          </div>
+          <div id="itemList" class="item-list">
+          </div>
+        </div>
+
+        <!-- エディタ -->
+        <div id="editorView" class="editor-view" style="display: none;">
+          <div class="editor-header">
+            <button class="btn btn-ghost" id="backBtn">← 戻る</button>
+            <div class="editor-actions">
+              <button class="btn btn-danger" id="deleteBtn">削除</button>
+              <button class="btn btn-primary" id="saveBtn">保存</button>
+            </div>
+          </div>
+
+          <div class="editor-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>ID (ファイル名)</label>
+                <input type="text" id="articleId" placeholder="例: my-first-post">
+              </div>
+              <div class="form-group form-group-small">
+                <label>絵文字</label>
+                <input type="text" id="articleEmoji" placeholder="📝">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>タイトル</label>
+              <input type="text" id="articleTitle" placeholder="記事タイトル">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>日付</label>
+                <input type="date" id="articleDate">
+              </div>
+              <div class="form-group">
+                <label>タグ（カンマ区切り）</label>
+                <input type="text" id="articleTags" placeholder="tag1, tag2">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>説明 (quicklook / description)</label>
+                <input type="text" id="articleDescription" placeholder="記事の簡単な説明">
+              </div>
+              <div class="form-group form-group-small">
+                <label>公開</label>
+                <label class="toggle">
+                  <input type="checkbox" id="articleListed" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- マガジン専用: 記事リスト -->
+            <div class="form-group" id="magazineArticlesGroup" style="display: none;">
+              <label>収録記事（1行1スラッグ）</label>
+              <textarea id="magazineArticles" rows="5" placeholder="2025-01-22-first&#10;2025-01-23-second"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>本文 (Markdown)</label>
+              <div class="editor-toolbar">
+                <button type="button" class="toolbar-btn" data-action="bold" title="太字">B</button>
+                <button type="button" class="toolbar-btn" data-action="italic" title="斜体">I</button>
+                <button type="button" class="toolbar-btn" data-action="code" title="コード">&lt;/&gt;</button>
+                <button type="button" class="toolbar-btn" data-action="link" title="リンク">🔗</button>
+                <button type="button" class="toolbar-btn" data-action="image" title="画像">🖼️</button>
+                <button type="button" class="toolbar-btn" data-action="h2" title="見出し2">H2</button>
+                <button type="button" class="toolbar-btn" data-action="h3" title="見出し3">H3</button>
+              </div>
+              <textarea id="articleBody" rows="20" placeholder="Markdown で記述..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 画像管理 -->
+        <div id="imagesView" class="images-view" style="display: none;">
+          <div class="upload-area" id="uploadArea">
+            <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
+            <p>📁 ここにドラッグ＆ドロップ、またはクリックしてアップロード</p>
+          </div>
+          <div id="imageGrid" class="image-grid">
+          </div>
+        </div>
+
+        <!-- タグ管理 -->
+        <div id="tagsView" class="tags-view" style="display: none;">
+          <div id="tagList" class="tag-list">
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 画像選択モーダル -->
+  <div id="imageModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>画像を選択</h3>
+        <button class="modal-close" id="closeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="modalImageGrid" class="image-grid modal-image-grid">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/admin.js"></script>
+</body>
+</html>

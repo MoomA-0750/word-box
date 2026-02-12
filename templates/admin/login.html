@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ログイン - WordBox Admin</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body {
+      background: #1a1a2e;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-box {
+      background: #16213e;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 400px;
+    }
+    .login-box h1 {
+      color: #e94560;
+      margin-bottom: 30px;
+      text-align: center;
+      font-size: 24px;
+    }
+    .login-box .form-group {
+      margin-bottom: 20px;
+    }
+    .login-box label {
+      color: #a0a0a0;
+    }
+    .login-box input[type="password"] {
+      border: 2px solid #0f3460;
+      background: #0f3460;
+      color: #fff;
+    }
+    .login-box input[type="password"]:focus {
+      border-color: #e94560;
+    }
+    .login-box button {
+      width: 100%;
+      padding: 14px;
+      background: #e94560;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .login-box button:hover {
+      background: #d63651;
+    }
+    .error {
+      color: #ff6b6b;
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h1>🔐 WordBox Admin</h1>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="password">パスワード</label>
+        <input type="password" id="password" name="password" required autofocus>
+      </div>
+      <button type="submit">ログイン</button>
+      <p class="error" id="error">パスワードが正しくありません</p>
+    </form>
+  </div>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('error');
+
+      try {
+        const res = await fetch('/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        if (res.ok) {
+          window.location.href = '/admin';
+        } else {
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = 'エラーが発生しました';
+        errorEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
