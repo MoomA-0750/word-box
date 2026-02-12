@@ -152,6 +152,44 @@
     </div>
   </div>
 
+  <!-- 画像メタデータ編集モーダル -->
+  <div id="metadataModal" class="modal" style="display: none;">
+    <div class="modal-content modal-content-metadata">
+      <div class="modal-header">
+        <h3>画像メタデータの編集</h3>
+        <button class="modal-close" id="closeMetadataModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="metadata-preview">
+          <img id="metadataImage" src="" alt="">
+          <div class="metadata-filename" id="metadataFilename"></div>
+        </div>
+        <div class="metadata-form">
+          <div class="form-group">
+            <label>名前</label>
+            <input type="text" id="metadataName" placeholder="画像の名前">
+          </div>
+          <div class="form-group">
+            <label>Alt属性（記事挿入時に使用）</label>
+            <input type="text" id="metadataAlt" placeholder="画像の代替テキスト">
+          </div>
+          <div class="form-group">
+            <label>説明</label>
+            <textarea id="metadataDescription" rows="3" placeholder="画像の説明"></textarea>
+          </div>
+          <div class="form-group">
+            <label>タグ（カンマ区切り）</label>
+            <input type="text" id="metadataTags" placeholder="風景, 夕日, 海">
+          </div>
+          <div class="metadata-actions">
+            <button class="btn btn-ghost" id="cancelMetadata">キャンセル</button>
+            <button class="btn btn-primary" id="saveMetadata">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/admin.js"></script>
 </body>
 </html>

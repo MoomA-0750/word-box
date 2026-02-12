@@ -6,7 +6,8 @@ const state = {
   images: [],
   tags: [],
   editingId: null,
-  isNew: false
+  isNew: false,
+  editingImageFilename: null
 };
 
 // DOM要素
@@ -30,7 +31,17 @@ const elements = {
   imageGrid: document.getElementById('imageGrid'),
   modalImageGrid: document.getElementById('modalImageGrid'),
   tagList: document.getElementById('tagList'),
-  magazineArticlesGroup: document.getElementById('magazineArticlesGroup')
+  magazineArticlesGroup: document.getElementById('magazineArticlesGroup'),
+  metadataModal: document.getElementById('metadataModal'),
+  closeMetadataModal: document.getElementById('closeMetadataModal'),
+  cancelMetadata: document.getElementById('cancelMetadata'),
+  saveMetadata: document.getElementById('saveMetadata'),
+  metadataImage: document.getElementById('metadataImage'),
+  metadataFilename: document.getElementById('metadataFilename'),
+  metadataName: document.getElementById('metadataName'),
+  metadataAlt: document.getElementById('metadataAlt'),
+  metadataDescription: document.getElementById('metadataDescription'),
+  metadataTags: document.getElementById('metadataTags')
 };
 
 // 初期化
@@ -62,6 +73,11 @@ function setupEventListeners() {
   elements.deleteBtn.addEventListener('click', () => deleteArticle());
   elements.searchInput.addEventListener('input', () => filterList());
   elements.closeModal.addEventListener('click', () => hideModal());
+
+  // メタデータモーダル
+  elements.closeMetadataModal.addEventListener('click', () => hideMetadataModal());
+  elements.cancelMetadata.addEventListener('click', () => hideMetadataModal());
+  elements.saveMetadata.addEventListener('click', () => saveImageMetadata());
 
   // 画像アップロード
   elements.uploadArea.addEventListener('click', () => elements.fileInput.click());
@@ -325,26 +341,34 @@ async function loadImages() {
 
 // 画像グリッド表示
 function renderImageGrid(target = elements.imageGrid, selectable = false) {
-  target.innerHTML = state.images.map(img => `
-    <div class="image-card" data-url="${img.url}" data-filename="${img.filename}">
-      <img src="${img.url}" alt="${img.filename}" loading="lazy">
-      <div class="image-card-info">
-        <div class="image-card-name">${img.filename}</div>
-        ${!selectable ? `
-        <div class="image-card-actions">
-          <button class="btn-copy" onclick="copyImageUrl('${img.url}')">コピー</button>
-          <button class="btn-delete-img" onclick="deleteImage('${img.filename}')">削除</button>
+  target.innerHTML = state.images.map(img => {
+    const displayName = img.name || img.filename;
+    const tags = img.tags.length > 0 ? `<div class="image-card-tags">${img.tags.map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('')}</div>` : '';
+
+    return `
+      <div class="image-card" data-url="${img.url}" data-filename="${img.filename}">
+        <img src="${img.url}" alt="${escapeHtml(img.alt || img.filename)}" loading="lazy">
+        <div class="image-card-info">
+          <div class="image-card-name" title="${escapeHtml(img.filename)}">${escapeHtml(displayName)}</div>
+          ${tags}
+          ${!selectable ? `
+          <div class="image-card-actions">
+            <button class="btn-edit" onclick="editImageMetadata('${img.filename}')">編集</button>
+            <button class="btn-copy" onclick="copyImageUrl('${img.url}')">コピー</button>
+            <button class="btn-delete-img" onclick="deleteImage('${img.filename}')">削除</button>
+          </div>
+          ` : ''}
         </div>
-        ` : ''}
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   if (selectable) {
     target.querySelectorAll('.image-card').forEach(card => {
       card.addEventListener('click', () => {
-        const url = card.dataset.url;
-        insertImageToEditor(url);
+        const filename = card.dataset.filename;
+        const image = state.images.find(img => img.filename === filename);
+        insertImageToEditor(image);
         hideModal();
       });
     });
@@ -497,15 +521,67 @@ function hideModal() {
 }
 
 // エディタに画像挿入
-function insertImageToEditor(url) {
+function insertImageToEditor(image) {
   const textarea = document.getElementById('articleBody');
   const start = textarea.selectionStart;
   const text = textarea.value;
-  const imageMarkdown = `![画像](${url})`;
+  const alt = image.alt || image.name || '画像';
+  const imageMarkdown = `![${alt}](${image.url})`;
 
   textarea.value = text.substring(0, start) + imageMarkdown + text.substring(start);
   textarea.focus();
   textarea.selectionStart = textarea.selectionEnd = start + imageMarkdown.length;
+}
+
+// 画像メタデータ編集モーダルを表示
+function editImageMetadata(filename) {
+  const image = state.images.find(img => img.filename === filename);
+  if (!image) return;
+
+  state.editingImageFilename = filename;
+
+  elements.metadataImage.src = image.url;
+  elements.metadataFilename.textContent = filename;
+  elements.metadataName.value = image.name || '';
+  elements.metadataAlt.value = image.alt || '';
+  elements.metadataDescription.value = image.description || '';
+  elements.metadataTags.value = image.tags.join(', ');
+
+  elements.metadataModal.style.display = 'flex';
+}
+
+// 画像メタデータを保存
+async function saveImageMetadata() {
+  if (!state.editingImageFilename) return;
+
+  const metadata = {
+    name: elements.metadataName.value.trim(),
+    alt: elements.metadataAlt.value.trim(),
+    description: elements.metadataDescription.value.trim(),
+    tags: elements.metadataTags.value.split(',').map(t => t.trim()).filter(t => t)
+  };
+
+  try {
+    const res = await fetch(`/admin/api/images/${encodeURIComponent(state.editingImageFilename)}/metadata`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(metadata)
+    });
+
+    if (!res.ok) throw new Error('Save failed');
+
+    showToast('メタデータを保存しました', 'success');
+    hideMetadataModal();
+    await loadImages();
+  } catch (err) {
+    showToast('保存に失敗しました', 'error');
+  }
+}
+
+// メタデータモーダルを非表示
+function hideMetadataModal() {
+  elements.metadataModal.style.display = 'none';
+  state.editingImageFilename = null;
 }
 
 // トースト表示
@@ -530,3 +606,4 @@ function escapeHtml(text) {
 // グローバル関数として公開
 window.copyImageUrl = copyImageUrl;
 window.deleteImage = deleteImage;
+window.editImageMetadata = editImageMetadata;

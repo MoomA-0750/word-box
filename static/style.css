@@ -2132,6 +2132,91 @@ footer {
   }
 }
 
+/* 画像メタデータモーダル */
+.modal-content-metadata {
+  width: 90%;
+  max-width: 700px;
+}
+
+.metadata-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: var(--input-bg);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.metadata-preview img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.metadata-filename {
+  font-size: 12px;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.metadata-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metadata-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+/* 画像カード拡張 */
+.image-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.tag-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  font-size: 11px;
+  border-radius: 12px;
+}
+
+.image-card-name {
+  font-size: 13px;
+  color: var(--text-color);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.btn-edit {
+  padding: 6px 12px;
+  background: var(--link-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.btn-edit:hover {
+  background: var(--link-hover);
+}
+
 /* Admin Responsive */
 @media (max-width: 768px) {
   .admin-page .sidebar {
@@ -2153,5 +2238,9 @@ footer {
 
   .admin-page .form-group-small {
     flex: 1;
+  }
+
+  .metadata-preview img {
+    max-height: 200px;
   }
 }
