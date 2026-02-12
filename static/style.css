@@ -2099,6 +2099,55 @@ footer {
   border-color: #4ade80;
 }
 
+/* Modal File List */
+.admin-page .modal-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-page .modal-file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-color);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-page .modal-file-item:hover {
+  border-color: #4ade80;
+  background: var(--card-bg);
+}
+
+.admin-page .modal-file-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.admin-page .modal-file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-page .modal-file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-page .modal-file-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
 /* Toast */
 .toast {
   position: fixed;
@@ -2242,5 +2291,115 @@ footer {
 
   .metadata-preview img {
     max-height: 200px;
+  }
+}
+
+/* ファイル管理 */
+.files-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.file-item:hover {
+  border-color: var(--link-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.file-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-description {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.file-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.file-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.file-tags .tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  font-size: 11px;
+  border-radius: 12px;
+}
+
+.file-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* ファイルメタデータモーダル */
+.file-url {
+  font-size: 12px;
+  color: var(--link-color);
+  word-break: break-all;
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+@media (max-width: 768px) {
+  .file-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .file-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }

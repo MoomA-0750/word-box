@@ -1,0 +1,19 @@
+{
+  "test-uuid-123.txt": {
+    "name": "テストドキュメント",
+    "tags": [
+      "テスト",
+      "サンプル"
+    ],
+    "description": "これはテスト用のファイルです",
+    "originalFilename": "テスト文書.txt",
+    "uploadedAt": "2025-02-12T13:00:00.000Z"
+  },
+  "b427c9fe-f9d4-4e51-bd7d-f4fa9bbf4bb2.xz": {
+    "name": "",
+    "tags": [],
+    "description": "",
+    "originalFilename": "wb.tar.xz",
+    "uploadedAt": "2026-02-12T13:52:48.214Z"
+  }
+}

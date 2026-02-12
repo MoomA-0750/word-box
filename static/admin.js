@@ -4,10 +4,12 @@ const state = {
   currentSection: 'posts',
   articles: [],
   images: [],
+  files: [],
   tags: [],
   editingId: null,
   isNew: false,
-  editingImageFilename: null
+  editingImageFilename: null,
+  editingFileFilename: null
 };
 
 // DOM要素
@@ -17,6 +19,7 @@ const elements = {
   listView: document.getElementById('listView'),
   editorView: document.getElementById('editorView'),
   imagesView: document.getElementById('imagesView'),
+  filesView: document.getElementById('filesView'),
   tagsView: document.getElementById('tagsView'),
   searchInput: document.getElementById('searchInput'),
   newBtn: document.getElementById('newBtn'),
@@ -26,10 +29,16 @@ const elements = {
   deleteBtn: document.getElementById('deleteBtn'),
   imageModal: document.getElementById('imageModal'),
   closeModal: document.getElementById('closeModal'),
+  fileModal: document.getElementById('fileModal'),
+  closeFileModal: document.getElementById('closeFileModal'),
+  modalFileList: document.getElementById('modalFileList'),
   uploadArea: document.getElementById('uploadArea'),
   fileInput: document.getElementById('fileInput'),
   imageGrid: document.getElementById('imageGrid'),
   modalImageGrid: document.getElementById('modalImageGrid'),
+  fileUploadArea: document.getElementById('fileUploadArea'),
+  fileFileInput: document.getElementById('fileFileInput'),
+  fileList: document.getElementById('fileList'),
   tagList: document.getElementById('tagList'),
   magazineArticlesGroup: document.getElementById('magazineArticlesGroup'),
   metadataModal: document.getElementById('metadataModal'),
@@ -41,7 +50,16 @@ const elements = {
   metadataName: document.getElementById('metadataName'),
   metadataAlt: document.getElementById('metadataAlt'),
   metadataDescription: document.getElementById('metadataDescription'),
-  metadataTags: document.getElementById('metadataTags')
+  metadataTags: document.getElementById('metadataTags'),
+  fileMetadataModal: document.getElementById('fileMetadataModal'),
+  closeFileMetadataModal: document.getElementById('closeFileMetadataModal'),
+  cancelFileMetadata: document.getElementById('cancelFileMetadata'),
+  saveFileMetadata: document.getElementById('saveFileMetadata'),
+  fileMetadataFilename: document.getElementById('fileMetadataFilename'),
+  fileMetadataUrl: document.getElementById('fileMetadataUrl'),
+  fileMetadataName: document.getElementById('fileMetadataName'),
+  fileMetadataDescription: document.getElementById('fileMetadataDescription'),
+  fileMetadataTags: document.getElementById('fileMetadataTags')
 };
 
 // 初期化
@@ -73,11 +91,17 @@ function setupEventListeners() {
   elements.deleteBtn.addEventListener('click', () => deleteArticle());
   elements.searchInput.addEventListener('input', () => filterList());
   elements.closeModal.addEventListener('click', () => hideModal());
+  elements.closeFileModal.addEventListener('click', () => hideFileModal());
 
-  // メタデータモーダル
+  // 画像メタデータモーダル
   elements.closeMetadataModal.addEventListener('click', () => hideMetadataModal());
   elements.cancelMetadata.addEventListener('click', () => hideMetadataModal());
   elements.saveMetadata.addEventListener('click', () => saveImageMetadata());
+
+  // ファイルメタデータモーダル
+  elements.closeFileMetadataModal.addEventListener('click', () => hideFileMetadataModal());
+  elements.cancelFileMetadata.addEventListener('click', () => hideFileMetadataModal());
+  elements.saveFileMetadata.addEventListener('click', () => saveFileMetadata());
 
   // 画像アップロード
   elements.uploadArea.addEventListener('click', () => elements.fileInput.click());
@@ -97,6 +121,24 @@ function setupEventListeners() {
     handleFileUpload(e.target.files);
   });
 
+  // ファイルアップロード
+  elements.fileUploadArea.addEventListener('click', () => elements.fileFileInput.click());
+  elements.fileUploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    elements.fileUploadArea.style.borderColor = 'var(--link-color)';
+  });
+  elements.fileUploadArea.addEventListener('dragleave', () => {
+    elements.fileUploadArea.style.borderColor = '';
+  });
+  elements.fileUploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    elements.fileUploadArea.style.borderColor = '';
+    handleFileFileUpload(e.dataTransfer.files);
+  });
+  elements.fileFileInput.addEventListener('change', (e) => {
+    handleFileFileUpload(e.target.files);
+  });
+
   // ツールバー
   document.querySelectorAll('.toolbar-btn').forEach(btn => {
     btn.addEventListener('click', () => handleToolbar(btn.dataset.action));
@@ -113,6 +155,7 @@ async function loadSection(section) {
     topics: 'トピック',
     magazines: 'マガジン',
     images: '画像',
+    files: 'ファイル',
     tags: 'タグ'
   };
   elements.sectionTitle.textContent = titles[section];
@@ -120,11 +163,14 @@ async function loadSection(section) {
   // ビュー切り替え
   elements.listView.style.display = ['posts', 'topics', 'magazines'].includes(section) ? 'block' : 'none';
   elements.imagesView.style.display = section === 'images' ? 'block' : 'none';
+  elements.filesView.style.display = section === 'files' ? 'block' : 'none';
   elements.tagsView.style.display = section === 'tags' ? 'block' : 'none';
   elements.newBtn.style.display = ['posts', 'topics', 'magazines'].includes(section) ? 'inline-flex' : 'none';
 
   if (section === 'images') {
     await loadImages();
+  } else if (section === 'files') {
+    await loadFiles();
   } else if (section === 'tags') {
     await loadTags();
   } else {
@@ -496,6 +542,9 @@ function handleToolbar(action) {
     case 'image':
       showImageModal();
       return;
+    case 'file':
+      showFileModal();
+      return;
     case 'h2':
       replacement = `## ${selected}`;
       break;
@@ -520,6 +569,52 @@ function hideModal() {
   elements.imageModal.style.display = 'none';
 }
 
+// ファイルモーダル表示
+async function showFileModal() {
+  // ファイル一覧を読み込み
+  if (state.files.length === 0) {
+    await loadFiles();
+  }
+
+  elements.fileModal.style.display = 'flex';
+  renderFileModalList();
+}
+
+// ファイルモーダル非表示
+function hideFileModal() {
+  elements.fileModal.style.display = 'none';
+}
+
+// ファイルモーダルのリスト表示
+function renderFileModalList() {
+  elements.modalFileList.innerHTML = state.files.map(file => {
+    const ext = file.filename.split('.').pop().toLowerCase();
+    const icon = getFileIcon(ext);
+    const displayName = file.name || file.originalFilename;
+    const sizeStr = formatFileSize(file.size);
+
+    return `
+      <div class="modal-file-item" data-url="${file.url}" data-filename="${file.originalFilename}">
+        <div class="modal-file-icon">${icon}</div>
+        <div class="modal-file-info">
+          <div class="modal-file-name">${escapeHtml(displayName)}</div>
+          <div class="modal-file-meta">${sizeStr}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // クリックイベント
+  elements.modalFileList.querySelectorAll('.modal-file-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const url = item.dataset.url;
+      const filename = item.dataset.filename;
+      insertFileToEditor(url, filename);
+      hideFileModal();
+    });
+  });
+}
+
 // エディタに画像挿入
 function insertImageToEditor(image) {
   const textarea = document.getElementById('articleBody');
@@ -531,6 +626,18 @@ function insertImageToEditor(image) {
   textarea.value = text.substring(0, start) + imageMarkdown + text.substring(start);
   textarea.focus();
   textarea.selectionStart = textarea.selectionEnd = start + imageMarkdown.length;
+}
+
+// エディタにファイル挿入
+function insertFileToEditor(url, filename) {
+  const textarea = document.getElementById('articleBody');
+  const start = textarea.selectionStart;
+  const text = textarea.value;
+  const fileMarkdown = `[${filename}](${url})`;
+
+  textarea.value = text.substring(0, start) + fileMarkdown + text.substring(start);
+  textarea.focus();
+  textarea.selectionStart = textarea.selectionEnd = start + fileMarkdown.length;
 }
 
 // 画像メタデータ編集モーダルを表示
@@ -603,7 +710,186 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// ファイル一覧読み込み
+async function loadFiles() {
+  try {
+    const res = await fetch('/admin/api/files');
+    state.files = await res.json();
+    renderFileList();
+  } catch (err) {
+    showToast('ファイルの読み込みに失敗しました', 'error');
+  }
+}
+
+// ファイル一覧表示
+function renderFileList() {
+  elements.fileList.innerHTML = state.files.map(file => {
+    const sizeStr = formatFileSize(file.size);
+    const ext = file.filename.split('.').pop().toLowerCase();
+    const icon = getFileIcon(ext);
+    const displayName = file.name || file.originalFilename;
+    const tags = file.tags.length > 0 ? `<div class="file-tags">${file.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : '';
+
+    return `
+      <div class="file-item">
+        <div class="file-icon">${icon}</div>
+        <div class="file-info">
+          <div class="file-name">${escapeHtml(displayName)}</div>
+          ${tags}
+          ${file.description ? `<div class="file-description">${escapeHtml(file.description)}</div>` : ''}
+          <div class="file-meta">${sizeStr} • ${file.filename}</div>
+        </div>
+        <div class="file-actions">
+          <button onclick="copyFileUrl('${file.url}')" class="btn btn-sm btn-ghost" title="URLをコピー">📋</button>
+          <button onclick="downloadFile('${file.url}', '${file.originalFilename}')" class="btn btn-sm btn-ghost" title="ダウンロード">⬇️</button>
+          <button onclick="editFileMetadata('${file.filename}')" class="btn btn-sm btn-ghost" title="編集">✏️</button>
+          <button onclick="deleteFile('${file.filename}')" class="btn btn-sm btn-danger" title="削除">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ファイルアイコンを取得
+function getFileIcon(ext) {
+  const icons = {
+    pdf: '📄',
+    doc: '📝', docx: '📝',
+    xls: '📊', xlsx: '📊',
+    ppt: '📊', pptx: '📊',
+    zip: '📦', rar: '📦', '7z': '📦',
+    txt: '📃',
+    csv: '📋',
+    json: '📋',
+    xml: '📋',
+    md: '📝',
+    mp3: '🎵', wav: '🎵',
+    mp4: '🎬', avi: '🎬',
+    default: '📎'
+  };
+  return icons[ext] || icons.default;
+}
+
+// ファイルサイズをフォーマット
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// ファイルアップロード処理
+async function handleFileFileUpload(files) {
+  if (!files || files.length === 0) return;
+
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/admin/api/files', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+
+      showToast(`${file.name} をアップロードしました`, 'success');
+    } catch (err) {
+      showToast(`${file.name} のアップロードに失敗しました`, 'error');
+    }
+  }
+
+  await loadFiles();
+}
+
+// ファイルURLをコピー
+function copyFileUrl(url) {
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('URLをコピーしました', 'success');
+  }).catch(() => {
+    showToast('コピーに失敗しました', 'error');
+  });
+}
+
+// ファイルダウンロード
+function downloadFile(url, filename) {
+  // ブラウザの通常のダウンロードを利用
+  // サーバー側でContent-Dispositionヘッダーを設定しているので、
+  // 単純にリンクを開くだけで元のファイル名でダウンロードされる
+  window.open(url, '_blank');
+}
+
+// ファイル削除
+async function deleteFile(filename) {
+  if (!confirm('このファイルを削除しますか？')) return;
+
+  try {
+    const res = await fetch(`/admin/api/files/${encodeURIComponent(filename)}`, {
+      method: 'DELETE'
+    });
+
+    if (!res.ok) throw new Error('Delete failed');
+
+    showToast('ファイルを削除しました', 'success');
+    await loadFiles();
+  } catch (err) {
+    showToast('削除に失敗しました', 'error');
+  }
+}
+
+// ファイルメタデータ編集
+function editFileMetadata(filename) {
+  const file = state.files.find(f => f.filename === filename);
+  if (!file) return;
+
+  state.editingFileFilename = filename;
+  elements.fileMetadataFilename.textContent = file.originalFilename;
+  elements.fileMetadataUrl.textContent = file.url;
+  elements.fileMetadataName.value = file.name || '';
+  elements.fileMetadataDescription.value = file.description || '';
+  elements.fileMetadataTags.value = file.tags.join(', ');
+
+  elements.fileMetadataModal.style.display = 'flex';
+}
+
+// ファイルメタデータを保存
+async function saveFileMetadata() {
+  if (!state.editingFileFilename) return;
+
+  const metadata = {
+    name: elements.fileMetadataName.value.trim(),
+    description: elements.fileMetadataDescription.value.trim(),
+    tags: elements.fileMetadataTags.value.split(',').map(t => t.trim()).filter(t => t)
+  };
+
+  try {
+    const res = await fetch(`/admin/api/files/${encodeURIComponent(state.editingFileFilename)}/metadata`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(metadata)
+    });
+
+    if (!res.ok) throw new Error('Save failed');
+
+    showToast('メタデータを保存しました', 'success');
+    hideFileMetadataModal();
+    await loadFiles();
+  } catch (err) {
+    showToast('保存に失敗しました', 'error');
+  }
+}
+
+// ファイルメタデータモーダルを非表示
+function hideFileMetadataModal() {
+  elements.fileMetadataModal.style.display = 'none';
+  state.editingFileFilename = null;
+}
+
 // グローバル関数として公開
 window.copyImageUrl = copyImageUrl;
 window.deleteImage = deleteImage;
 window.editImageMetadata = editImageMetadata;
+window.copyFileUrl = copyFileUrl;
+window.downloadFile = downloadFile;
+window.deleteFile = deleteFile;
+window.editFileMetadata = editFileMetadata;

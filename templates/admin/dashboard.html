@@ -18,6 +18,7 @@
         <a href="#" class="nav-item" data-section="topics">📚 トピック</a>
         <a href="#" class="nav-item" data-section="magazines">📰 マガジン</a>
         <a href="#" class="nav-item" data-section="images">🖼️ 画像</a>
+        <a href="#" class="nav-item" data-section="files">📎 ファイル</a>
         <a href="#" class="nav-item" data-section="tags">🏷️ タグ</a>
       </nav>
       <div class="sidebar-footer">
@@ -111,6 +112,7 @@
                 <button type="button" class="toolbar-btn" data-action="code" title="コード">&lt;/&gt;</button>
                 <button type="button" class="toolbar-btn" data-action="link" title="リンク">🔗</button>
                 <button type="button" class="toolbar-btn" data-action="image" title="画像">🖼️</button>
+                <button type="button" class="toolbar-btn" data-action="file" title="ファイル">📎</button>
                 <button type="button" class="toolbar-btn" data-action="h2" title="見出し2">H2</button>
                 <button type="button" class="toolbar-btn" data-action="h3" title="見出し3">H3</button>
               </div>
@@ -126,6 +128,16 @@
             <p>📁 ここにドラッグ＆ドロップ、またはクリックしてアップロード</p>
           </div>
           <div id="imageGrid" class="image-grid">
+          </div>
+        </div>
+
+        <!-- ファイル管理 -->
+        <div id="filesView" class="files-view" style="display: none;">
+          <div class="upload-area" id="fileUploadArea">
+            <input type="file" id="fileFileInput" multiple style="display: none;">
+            <p>📁 ここにドラッグ＆ドロップ、またはクリックしてアップロード</p>
+          </div>
+          <div id="fileList" class="file-list">
           </div>
         </div>
 
@@ -147,6 +159,20 @@
       </div>
       <div class="modal-body">
         <div id="modalImageGrid" class="image-grid modal-image-grid">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ファイル選択モーダル -->
+  <div id="fileModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>ファイルを選択</h3>
+        <button class="modal-close" id="closeFileModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="modalFileList" class="modal-file-list">
         </div>
       </div>
     </div>
@@ -184,6 +210,41 @@
           <div class="metadata-actions">
             <button class="btn btn-ghost" id="cancelMetadata">キャンセル</button>
             <button class="btn btn-primary" id="saveMetadata">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ファイルメタデータ編集モーダル -->
+  <div id="fileMetadataModal" class="modal" style="display: none;">
+    <div class="modal-content modal-content-metadata">
+      <div class="modal-header">
+        <h3>ファイルメタデータの編集</h3>
+        <button class="modal-close" id="closeFileMetadataModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="metadata-preview">
+          <div class="file-icon">📎</div>
+          <div class="metadata-filename" id="fileMetadataFilename"></div>
+          <div class="file-url" id="fileMetadataUrl"></div>
+        </div>
+        <div class="metadata-form">
+          <div class="form-group">
+            <label>名前</label>
+            <input type="text" id="fileMetadataName" placeholder="ファイルの名前">
+          </div>
+          <div class="form-group">
+            <label>説明</label>
+            <textarea id="fileMetadataDescription" rows="3" placeholder="ファイルの説明"></textarea>
+          </div>
+          <div class="form-group">
+            <label>タグ（カンマ区切り）</label>
+            <input type="text" id="fileMetadataTags" placeholder="ドキュメント, PDF, マニュアル">
+          </div>
+          <div class="metadata-actions">
+            <button class="btn btn-ghost" id="cancelFileMetadata">キャンセル</button>
+            <button class="btn btn-primary" id="saveFileMetadata">保存</button>
           </div>
         </div>
       </div>

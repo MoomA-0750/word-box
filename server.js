@@ -375,6 +375,35 @@ http.createServer(async (req, res) => {
       const filePath = `.${req.url}`;
       const ext = path.extname(filePath);
       const content = await fs.readFile(filePath);
+
+      // ファイル置き場のファイルには元のファイル名をContent-Dispositionヘッダーに設定
+      if (req.url.startsWith('/static/files/')) {
+        const filename = path.basename(filePath);
+        const metadataPath = './static/files/metadata.json';
+
+        let originalFilename = filename;
+        if (await fs.pathExists(metadataPath)) {
+          try {
+            const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
+            if (metadata[filename] && metadata[filename].originalFilename) {
+              originalFilename = metadata[filename].originalFilename;
+            }
+          } catch (err) {
+            console.error('Failed to read file metadata:', err);
+          }
+        }
+
+        // Content-Dispositionヘッダーで元のファイル名を指定
+        // RFC 5987に準拠したUTF-8ファイル名のエンコーディング
+        const encodedFilename = encodeURIComponent(originalFilename);
+
+        res.writeHead(200, {
+          'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+          'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`
+        });
+        return res.end(content);
+      }
+
       res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
       return res.end(content);
     }
