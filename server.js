@@ -27,7 +27,9 @@ const templates = {
   index: '',
   layout: '',
   post: '',
-  search: ''
+  search: '',
+  dictionary: '',
+  dictionaryEntry: ''
 };
 
 // テンプレート読み込み
@@ -38,6 +40,8 @@ async function loadTemplates() {
     templates.layout = await fs.readFile('./templates/layout.html', 'utf8');
     templates.post = await fs.readFile('./templates/post.html', 'utf8');
     templates.search = await fs.readFile('./templates/search.html', 'utf8');
+    templates.dictionary = await fs.readFile('./templates/dictionary.html', 'utf8');
+    templates.dictionaryEntry = await fs.readFile('./templates/dictionary-entry.html', 'utf8');
     console.log('Templates loaded.');
   } catch (err) {
     console.error('Error loading templates:', err);
@@ -92,7 +96,29 @@ async function buildSearchIndex() {
       });
     }
   }
-  
+
+  // 辞書
+  const dictDir = './content/dictionary';
+  if (await fs.pathExists(dictDir)) {
+    const files = await fs.readdir(dictDir);
+    for (const file of files) {
+      if (!file.endsWith('.md')) continue;
+      const content = await fs.readFile(`${dictDir}/${file}`, 'utf8');
+      const { metadata, content: body } = parseFrontMatter(content);
+      if (metadata.listed === false) continue;
+
+      searchEngine.addDocument({
+        id: file.replace('.md', ''),
+        title: metadata.title || 'Untitled',
+        content: body,
+        tags: metadata.category ? [metadata.category] : [],
+        type: 'dictionary',
+        emoji: metadata.emoji || '📖',
+        date: ''
+      });
+    }
+  }
+
   // マガジン
   const magsDir = './content/magazines';
   if (await fs.pathExists(magsDir)) {
@@ -168,6 +194,41 @@ async function getPosts(onlyListed = false) {
 // トピック一覧取得
 async function getTopics(onlyListed = false) {
   return getPostsFromDir('./content/topics', onlyListed);
+}
+
+// 辞書一覧取得
+async function getDictionaryEntries(onlyListed = false) {
+  const dir = './content/dictionary';
+  if (!await fs.pathExists(dir)) return [];
+
+  const files = await fs.readdir(dir);
+  const entries = [];
+
+  for (const file of files) {
+    if (!file.endsWith('.md')) continue;
+
+    const content = await fs.readFile(`${dir}/${file}`, 'utf8');
+    const { metadata, content: body } = parseFrontMatter(content);
+
+    const listed = metadata.listed !== false;
+    if (onlyListed && !listed) continue;
+
+    entries.push({
+      slug: file.replace('.md', ''),
+      title: metadata.title || 'Untitled',
+      emoji: metadata.emoji || '📖',
+      reading: metadata.reading || '',
+      category: metadata.category || '',
+      description: metadata.description || '',
+      related: metadata.related || [],
+      listed: listed
+    });
+  }
+
+  // 読みでソート（五十音順）
+  entries.sort((a, b) => (a.reading || a.title).localeCompare(b.reading || b.title, 'ja'));
+
+  return entries;
 }
 
 // マガジン一覧取得
@@ -330,7 +391,8 @@ async function renderArticlePage(dir, slug, res) {
 
   const allPosts = await getPosts();
   const allMagazines = await getMagazines();
-  const html = parseMarkdown(markdown, allPosts, allMagazines);
+  const allDictEntries = await getDictionaryEntries();
+  const html = parseMarkdown(markdown, allPosts, allMagazines, allDictEntries);
 
   // マガジン情報を取得（postsディレクトリの記事のみ）
   let magazineTocHtml = '';
@@ -367,7 +429,7 @@ http.createServer(async (req, res) => {
 
     // 管理画面
     if (req.url.startsWith('/admin')) {
-      return handleAdminRequest(req, res, req.url.split('?')[0], buildSearchIndex);
+      return await handleAdminRequest(req, res, req.url.split('?')[0], buildSearchIndex);
     }
 
     // 静的ファイル
@@ -589,6 +651,107 @@ http.createServer(async (req, res) => {
       return renderArticlePage('./content/topics', slug, res);
     }
 
+    // 辞書一覧ページ
+    if (req.url === '/dictionary' || req.url === '/dictionary/') {
+      const entries = await getDictionaryEntries(true);
+
+      // カテゴリでグループ化
+      const categories = {};
+      for (const entry of entries) {
+        const cat = entry.category || '未分類';
+        if (!categories[cat]) categories[cat] = [];
+        categories[cat].push(entry);
+      }
+
+      let entriesHtml = '';
+      for (const [category, catEntries] of Object.entries(categories)) {
+        entriesHtml += `<div class="dictionary-category">`;
+        entriesHtml += `<h3 class="dictionary-category-title">${escapeHtml(category)}</h3>`;
+        entriesHtml += `<div class="dictionary-entries">`;
+        for (const entry of catEntries) {
+          entriesHtml += `<a href="/dictionary/${entry.slug}" class="dictionary-entry-card">
+            <div class="dictionary-entry-emoji">${entry.emoji}</div>
+            <div class="dictionary-entry-info">
+              <div class="dictionary-entry-title">${escapeHtml(entry.title)}</div>
+              ${entry.reading ? `<div class="dictionary-entry-reading">${escapeHtml(entry.reading)}</div>` : ''}
+              <div class="dictionary-entry-desc">${escapeHtml(entry.description)}</div>
+            </div>
+            <div class="dictionary-entry-arrow">→</div>
+          </a>`;
+        }
+        entriesHtml += `</div></div>`;
+      }
+
+      const content = applyTemplate(templates.dictionary, {
+        count: entries.length,
+        entries: entriesHtml
+      });
+
+      const html = applyTemplate(templates.layout, {
+        title: '辞書 - WordBox',
+        content: content
+      });
+
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(html);
+    }
+
+    // 辞書詳細ページ
+    if (req.url.startsWith('/dictionary/')) {
+      const slug = req.url.replace('/dictionary/', '');
+      const mdFile = `./content/dictionary/${slug}.md`;
+
+      if (!await fs.pathExists(mdFile)) {
+        res.writeHead(404);
+        return res.end('Not Found');
+      }
+
+      const content = await fs.readFile(mdFile, 'utf8');
+      const { metadata, content: markdown } = parseFrontMatter(content);
+
+      const allPosts = await getPosts();
+      const allMagazines = await getMagazines();
+      const allDictEntries = await getDictionaryEntries();
+      const bodyHtml = parseMarkdown(markdown, allPosts, allMagazines, allDictEntries);
+
+      // 関連用語のHTML
+      let relatedHtml = '';
+      if (metadata.related && metadata.related.length > 0) {
+        const relatedItems = metadata.related.map(relSlug => {
+          const relEntry = allDictEntries.find(e => e.slug === relSlug);
+          if (relEntry) {
+            return `<a href="/dictionary/${relEntry.slug}" class="dictionary-related-item">
+              <span class="dictionary-related-emoji">${relEntry.emoji}</span>
+              <span class="dictionary-related-title">${escapeHtml(relEntry.title)}</span>
+            </a>`;
+          }
+          return '';
+        }).filter(h => h).join('');
+        relatedHtml = `<div class="dictionary-related">
+          <h3>関連用語</h3>
+          <div class="dictionary-related-list">${relatedItems}</div>
+        </div>`;
+      }
+
+      const entryHtml = applyTemplate(templates.dictionaryEntry, {
+        title: metadata.title || 'Untitled',
+        emoji: metadata.emoji || '📖',
+        reading: metadata.reading || '',
+        category: metadata.category || '',
+        description: metadata.description || '',
+        content: bodyHtml,
+        related: relatedHtml
+      });
+
+      const finalHtml = applyTemplate(templates.layout, {
+        title: `${metadata.title || 'Untitled'} - 辞書 - WordBox`,
+        content: entryHtml
+      });
+
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(finalHtml);
+    }
+
     // 記事ページ
     if (req.url.startsWith('/posts/')) {
       const slug = req.url.replace('/posts/', '');
@@ -599,16 +762,17 @@ http.createServer(async (req, res) => {
     if (req.url.startsWith('/search')) {
       const urlObj = new URL(req.url, `http://${req.headers.host}`);
       const query = urlObj.searchParams.get('q') || '';
-      
+
       const results = searchEngine.search(query);
-      
+
       const resultsHtml = results.map(r => {
         const doc = r.item;
         let url = '';
         if (doc.type === 'post') url = `/posts/${doc.id}`;
         else if (doc.type === 'topic') url = `/topics/${doc.id}`;
         else if (doc.type === 'magazine') url = `/magazines/${doc.id}`;
-        
+        else if (doc.type === 'dictionary') url = `/dictionary/${doc.id}`;
+
         return `
         <div class="search-result-item">
           <h3><a href="${url}"><span class="search-result-emoji">${doc.emoji}</span> ${doc.title}</a></h3>
@@ -658,3 +822,12 @@ function escapeHtml(text) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+// プロセスレベルのエラーハンドリング（サーバークラッシュ防止）
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});

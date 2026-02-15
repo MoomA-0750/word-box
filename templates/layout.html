@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,32 +19,41 @@
     }
   </script>
 </head>
+
 <body>
   <header>
     <div class="header-inner">
-      <h1><a href="/">WordBox</a></h1>
-      <nav class="main-nav">
-        <a href="/">ホーム</a>
-        <a href="/magazines">マガジン</a>
-        <a href="/topics">トピック</a>
-      </nav>
-      <div class="header-search">
-        <form action="/search" method="GET">
-          <input type="text" name="q" placeholder="検索..." aria-label="検索">
-          <button type="submit" aria-label="検索実行">🔍</button>
-        </form>
+      <div class="header-left">
+        <h1><a href="/">WordBox</a></h1>
+        <nav class="main-nav">
+          <a href="/magazines">マガジン</a>
+          <a href="/topics">トピック</a>
+          <a href="/dictionary">辞書</a>
+        </nav>
       </div>
-      <button class="theme-toggle" id="themeToggle" aria-label="テーマ切替">
-        <span class="theme-toggle-icon"></span>
-      </button>
+      <div class="header-right">
+        <div class="header-search">
+          <form action="/search" method="GET">
+            <input type="text" name="q" placeholder="検索..." aria-label="検索">
+            <button type="submit" aria-label="検索実行">🔍</button>
+          </form>
+        </div>
+        <button class="theme-toggle" id="themeToggle" aria-label="テーマ切替">
+          <span class="theme-toggle-icon"></span>
+        </button>
+      </div>
     </div>
   </header>
-  <main>
-    {{content}}
-  </main>
+  <div class="page-wrapper">
+    <main>
+      {{content}}
+    </main>
+    <aside class="sidebar-toc" id="sidebarToc"></aside>
+  </div>
   <footer>
     <p>&copy; 2025 WordBox</p>
   </footer>
   <script src="/static/main.js"></script>
 </body>
+
 </html>

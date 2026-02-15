@@ -9,7 +9,9 @@ const state = {
   editingId: null,
   isNew: false,
   editingImageFilename: null,
-  editingFileFilename: null
+  editingFileFilename: null,
+  previewVisible: false,
+  previewTimer: null
 };
 
 // DOM要素
@@ -41,6 +43,7 @@ const elements = {
   fileList: document.getElementById('fileList'),
   tagList: document.getElementById('tagList'),
   magazineArticlesGroup: document.getElementById('magazineArticlesGroup'),
+  dictionaryFieldsGroup: document.getElementById('dictionaryFieldsGroup'),
   metadataModal: document.getElementById('metadataModal'),
   closeMetadataModal: document.getElementById('closeMetadataModal'),
   cancelMetadata: document.getElementById('cancelMetadata'),
@@ -59,7 +62,15 @@ const elements = {
   fileMetadataUrl: document.getElementById('fileMetadataUrl'),
   fileMetadataName: document.getElementById('fileMetadataName'),
   fileMetadataDescription: document.getElementById('fileMetadataDescription'),
-  fileMetadataTags: document.getElementById('fileMetadataTags')
+  fileMetadataTags: document.getElementById('fileMetadataTags'),
+  imageUploadProgress: document.getElementById('imageUploadProgress'),
+  fileUploadProgress: document.getElementById('fileUploadProgress'),
+  publicPageLink: document.getElementById('publicPageLink'),
+  togglePreviewBtn: document.getElementById('togglePreviewBtn'),
+  previewPanel: document.getElementById('previewPanel'),
+  previewContent: document.getElementById('previewContent'),
+  previewStatus: document.getElementById('previewStatus'),
+  editorBodyContainer: document.querySelector('.editor-body-container')
 };
 
 // 初期化
@@ -143,6 +154,28 @@ function setupEventListeners() {
   document.querySelectorAll('.toolbar-btn').forEach(btn => {
     btn.addEventListener('click', () => handleToolbar(btn.dataset.action));
   });
+
+  // プレビュートグル
+  elements.togglePreviewBtn.addEventListener('click', () => {
+    state.previewVisible = !state.previewVisible;
+    elements.previewPanel.style.display = state.previewVisible ? 'flex' : 'none';
+    elements.togglePreviewBtn.textContent = state.previewVisible ? '✏️ エディタのみ' : '👁️ プレビュー';
+    if (state.previewVisible) {
+      elements.editorBodyContainer.classList.add('with-preview');
+      updatePreview();
+    } else {
+      elements.editorBodyContainer.classList.remove('with-preview');
+    }
+  });
+
+  // テキストエリア入力時にプレビュー更新（デバウンス付き）
+  document.getElementById('articleBody').addEventListener('input', () => {
+    if (state.previewVisible) {
+      clearTimeout(state.previewTimer);
+      elements.previewStatus.textContent = '⏳ 更新待ち...';
+      state.previewTimer = setTimeout(() => updatePreview(), 500);
+    }
+  });
 }
 
 // セクション読み込み
@@ -154,6 +187,7 @@ async function loadSection(section) {
     posts: '記事',
     topics: 'トピック',
     magazines: 'マガジン',
+    dictionary: '辞書',
     images: '画像',
     files: 'ファイル',
     tags: 'タグ'
@@ -161,11 +195,11 @@ async function loadSection(section) {
   elements.sectionTitle.textContent = titles[section];
 
   // ビュー切り替え
-  elements.listView.style.display = ['posts', 'topics', 'magazines'].includes(section) ? 'block' : 'none';
+  elements.listView.style.display = ['posts', 'topics', 'magazines', 'dictionary'].includes(section) ? 'block' : 'none';
   elements.imagesView.style.display = section === 'images' ? 'block' : 'none';
   elements.filesView.style.display = section === 'files' ? 'block' : 'none';
   elements.tagsView.style.display = section === 'tags' ? 'block' : 'none';
-  elements.newBtn.style.display = ['posts', 'topics', 'magazines'].includes(section) ? 'inline-flex' : 'none';
+  elements.newBtn.style.display = ['posts', 'topics', 'magazines', 'dictionary'].includes(section) ? 'inline-flex' : 'none';
 
   if (section === 'images') {
     await loadImages();
@@ -238,7 +272,8 @@ function createNew() {
 
   // デフォルト値
   document.getElementById('articleDate').value = new Date().toISOString().split('T')[0];
-  document.getElementById('articleEmoji').value = state.currentSection === 'magazines' ? '📚' : '📝';
+  const defaultEmojis = { magazines: '📚', dictionary: '📖' };
+  document.getElementById('articleEmoji').value = defaultEmojis[state.currentSection] || '📝';
 }
 
 // 記事編集
@@ -265,12 +300,80 @@ function showEditor() {
 
   // マガジン用フィールド表示切り替え
   elements.magazineArticlesGroup.style.display = state.currentSection === 'magazines' ? 'block' : 'none';
+
+  // 辞書用フィールド表示切り替え
+  elements.dictionaryFieldsGroup.style.display = state.currentSection === 'dictionary' ? 'block' : 'none';
+
+  // 公開ページリンクを更新
+  updatePublicPageLink();
 }
 
 // 一覧表示
 function showList() {
   elements.listView.style.display = 'block';
   elements.editorView.style.display = 'none';
+}
+
+// 公開ページリンクを更新
+function updatePublicPageLink() {
+  const link = elements.publicPageLink;
+  if (state.isNew) {
+    link.style.display = 'none';
+    return;
+  }
+
+  const id = state.editingId || document.getElementById('articleId').value;
+  if (!id) {
+    link.style.display = 'none';
+    return;
+  }
+
+  const sectionPath = {
+    posts: '/posts/',
+    topics: '/topics/',
+    magazines: '/magazines/',
+    dictionary: '/dictionary/'
+  };
+
+  const basePath = sectionPath[state.currentSection] || '/posts/';
+  link.href = basePath + encodeURIComponent(id);
+  link.style.display = 'inline-flex';
+}
+
+// Markdownプレビューを更新
+async function updatePreview() {
+  const markdown = document.getElementById('articleBody').value;
+  if (!markdown.trim()) {
+    elements.previewContent.innerHTML = '';
+    elements.previewStatus.textContent = '';
+    return;
+  }
+
+  elements.previewStatus.textContent = '⏳ レンダリング中...';
+
+  try {
+    const res = await fetch('/admin/api/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markdown })
+    });
+
+    if (!res.ok) throw new Error('Preview failed');
+
+    const data = await res.json();
+    elements.previewContent.innerHTML = data.html;
+    elements.previewStatus.textContent = '✅ 更新済み';
+
+    // ステータスを3秒後にクリア
+    setTimeout(() => {
+      if (elements.previewStatus.textContent === '✅ 更新済み') {
+        elements.previewStatus.textContent = '';
+      }
+    }, 3000);
+  } catch (err) {
+    elements.previewStatus.textContent = '❌ エラー';
+    console.error('Preview error:', err);
+  }
 }
 
 // フォームクリア
@@ -284,6 +387,15 @@ function clearForm() {
   document.getElementById('articleListed').checked = true;
   document.getElementById('articleBody').value = '';
   document.getElementById('magazineArticles').value = '';
+
+  // 辞書フィールドをクリア
+  document.getElementById('dictReading').value = '';
+  document.getElementById('dictCategory').value = '';
+  document.getElementById('dictRelated').value = '';
+
+  // プレビューもクリア
+  elements.previewContent.innerHTML = '';
+  elements.previewStatus.textContent = '';
 }
 
 // フォーム入力
@@ -299,6 +411,19 @@ function fillForm(article) {
 
   if (state.currentSection === 'magazines') {
     document.getElementById('magazineArticles').value = (article.metadata.articles || []).join('\n');
+  }
+
+  // 辞書フィールドを入力
+  if (state.currentSection === 'dictionary') {
+    document.getElementById('dictReading').value = article.metadata.reading || '';
+    document.getElementById('dictCategory').value = article.metadata.category || '';
+    document.getElementById('dictRelated').value = (article.metadata.related || []).join(', ');
+  }
+
+  // フォーム入力後にプレビューと公開リンクを更新
+  updatePublicPageLink();
+  if (state.previewVisible) {
+    updatePreview();
   }
 }
 
@@ -318,11 +443,17 @@ async function saveArticle() {
     listed: document.getElementById('articleListed').checked
   };
 
-  // quicklook / description
+  // quicklook / description / dictionary metadata
   const desc = document.getElementById('articleDescription').value;
   if (state.currentSection === 'magazines') {
     metadata.description = desc;
     metadata.articles = document.getElementById('magazineArticles').value.split('\n').map(s => s.trim()).filter(s => s);
+  } else if (state.currentSection === 'dictionary') {
+    metadata.description = desc;
+    metadata.reading = document.getElementById('dictReading').value;
+    metadata.category = document.getElementById('dictCategory').value;
+    const relatedValue = document.getElementById('dictRelated').value;
+    metadata.related = relatedValue ? relatedValue.split(',').map(s => s.trim()).filter(s => s) : [];
   } else {
     metadata.quicklook = desc;
   }
@@ -349,7 +480,14 @@ async function saveArticle() {
 
     showToast('保存しました', 'success');
     await loadArticles();
-    showList();
+
+    // 新規作成の場合、以降は編集モードに切り替え
+    if (state.isNew) {
+      state.isNew = false;
+      state.editingId = id;
+      elements.deleteBtn.style.display = 'inline-flex';
+      updatePublicPageLink();
+    }
   } catch (err) {
     showToast('保存に失敗しました', 'error');
   }
@@ -445,28 +583,140 @@ async function deleteImage(filename) {
   }
 }
 
-// ファイルアップロード処理
-async function handleFileUpload(files) {
-  for (const file of files) {
+// アップロードプログレスUIを作成
+function createProgressItem(container, file) {
+  const item = document.createElement('div');
+  item.className = 'upload-progress-item';
+  item.innerHTML = `
+    <div class="upload-progress-header">
+      <span class="upload-progress-filename">${escapeHtml(file.name)}</span>
+      <span class="upload-progress-status uploading">⏳ 待機中...</span>
+    </div>
+    <div class="upload-progress-bar-bg">
+      <div class="upload-progress-bar" style="width: 0%"></div>
+    </div>
+  `;
+  container.appendChild(item);
+  return {
+    element: item,
+    bar: item.querySelector('.upload-progress-bar'),
+    status: item.querySelector('.upload-progress-status')
+  };
+}
+
+// プログレスサマリーを作成/更新
+function updateProgressSummary(container, completed, total, errors) {
+  let summary = container.querySelector('.upload-progress-summary');
+  if (!summary) {
+    summary = document.createElement('div');
+    summary.className = 'upload-progress-summary';
+    container.insertBefore(summary, container.firstChild);
+  }
+  const successCount = completed - errors;
+  summary.innerHTML = `
+    <span><span class="summary-count">${completed}</span> / ${total} ファイル完了</span>
+    <span>${errors > 0 ? `❌ ${errors}件エラー` : completed === total ? '✅ 完了' : '⏳ アップロード中...'}</span>
+  `;
+  return summary;
+}
+
+// 単一ファイルのアップロード（XMLHttpRequest でプログレス対応）
+function uploadSingleFile(url, file, progressItem) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
     const formData = new FormData();
     formData.append('file', file);
 
+    // プログレスイベント
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        progressItem.bar.style.width = `${percent}%`;
+        progressItem.status.textContent = `⬆️ ${percent}%`;
+        progressItem.status.className = 'upload-progress-status uploading';
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        progressItem.bar.style.width = '100%';
+        progressItem.bar.classList.add('completed');
+        progressItem.status.textContent = '✅ 完了';
+        progressItem.status.className = 'upload-progress-status completed';
+        progressItem.element.classList.add('completed');
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          resolve({});
+        }
+      } else {
+        progressItem.bar.classList.add('error');
+        progressItem.status.textContent = '❌ エラー';
+        progressItem.status.className = 'upload-progress-status error';
+        progressItem.element.classList.add('error');
+        reject(new Error(`Upload failed: ${xhr.status}`));
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      progressItem.bar.classList.add('error');
+      progressItem.status.textContent = '❌ 接続エラー';
+      progressItem.status.className = 'upload-progress-status error';
+      progressItem.element.classList.add('error');
+      reject(new Error('Network error'));
+    });
+
+    xhr.open('POST', url);
+    xhr.send(formData);
+  });
+}
+
+// 画像アップロード処理（複数ファイル同時・プログレスバー付き）
+async function handleFileUpload(files) {
+  if (!files || files.length === 0) return;
+
+  const container = elements.imageUploadProgress;
+  container.innerHTML = '';
+  elements.uploadArea.classList.add('uploading');
+
+  const total = files.length;
+  let completed = 0;
+  let errors = 0;
+
+  updateProgressSummary(container, 0, total, 0);
+
+  const uploads = Array.from(files).map(async (file) => {
+    const progressItem = createProgressItem(container, file);
     try {
-      const res = await fetch('/admin/api/images', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!res.ok) throw new Error('Upload failed');
-
-      const result = await res.json();
-      showToast(`${result.originalFilename} をアップロードしました`, 'success');
+      await uploadSingleFile('/admin/api/images', file, progressItem);
+      completed++;
     } catch (err) {
-      showToast(`${file.name} のアップロードに失敗しました`, 'error');
+      completed++;
+      errors++;
     }
+    updateProgressSummary(container, completed, total, errors);
+  });
+
+  await Promise.all(uploads);
+
+  elements.uploadArea.classList.remove('uploading');
+  elements.fileInput.value = '';
+
+  // 成功メッセージ
+  const successCount = total - errors;
+  if (successCount > 0) {
+    showToast(`${successCount}件の画像をアップロードしました`, 'success');
+  }
+  if (errors > 0) {
+    showToast(`${errors}件のアップロードに失敗しました`, 'error');
   }
 
   await loadImages();
+
+  // 2秒後にプログレス表示をクリア
+  setTimeout(() => {
+    container.innerHTML = '';
+  }, 2000);
 }
 
 // タグ読み込み
@@ -777,29 +1027,52 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-// ファイルアップロード処理
+// ファイルアップロード処理（複数ファイル同時・プログレスバー付き）
 async function handleFileFileUpload(files) {
   if (!files || files.length === 0) return;
 
-  for (const file of files) {
-    const formData = new FormData();
-    formData.append('file', file);
+  const container = elements.fileUploadProgress;
+  container.innerHTML = '';
+  elements.fileUploadArea.classList.add('uploading');
 
+  const total = files.length;
+  let completed = 0;
+  let errors = 0;
+
+  updateProgressSummary(container, 0, total, 0);
+
+  const uploads = Array.from(files).map(async (file) => {
+    const progressItem = createProgressItem(container, file);
     try {
-      const res = await fetch('/admin/api/files', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!res.ok) throw new Error('Upload failed');
-
-      showToast(`${file.name} をアップロードしました`, 'success');
+      await uploadSingleFile('/admin/api/files', file, progressItem);
+      completed++;
     } catch (err) {
-      showToast(`${file.name} のアップロードに失敗しました`, 'error');
+      completed++;
+      errors++;
     }
+    updateProgressSummary(container, completed, total, errors);
+  });
+
+  await Promise.all(uploads);
+
+  elements.fileUploadArea.classList.remove('uploading');
+  elements.fileFileInput.value = '';
+
+  // 成功メッセージ
+  const successCount = total - errors;
+  if (successCount > 0) {
+    showToast(`${successCount}件のファイルをアップロードしました`, 'success');
+  }
+  if (errors > 0) {
+    showToast(`${errors}件のアップロードに失敗しました`, 'error');
   }
 
   await loadFiles();
+
+  // 2秒後にプログレス表示をクリア
+  setTimeout(() => {
+    container.innerHTML = '';
+  }, 2000);
 }
 
 // ファイルURLをコピー

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="ja" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WordBox Admin</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body class="admin-page">
   <div class="admin-container">
     <aside class="sidebar">
@@ -17,6 +19,7 @@
         <a href="#" class="nav-item active" data-section="posts">📝 記事</a>
         <a href="#" class="nav-item" data-section="topics">📚 トピック</a>
         <a href="#" class="nav-item" data-section="magazines">📰 マガジン</a>
+        <a href="#" class="nav-item" data-section="dictionary">📖 辞書</a>
         <a href="#" class="nav-item" data-section="images">🖼️ 画像</a>
         <a href="#" class="nav-item" data-section="files">📎 ファイル</a>
         <a href="#" class="nav-item" data-section="tags">🏷️ タグ</a>
@@ -49,7 +52,13 @@
         <!-- エディタ -->
         <div id="editorView" class="editor-view" style="display: none;">
           <div class="editor-header">
-            <button class="btn btn-ghost" id="backBtn">← 戻る</button>
+            <div class="editor-header-left">
+              <button class="btn btn-ghost" id="backBtn">← 戻る</button>
+              <a href="#" id="publicPageLink" class="btn btn-ghost btn-public-link" target="_blank"
+                style="display: none;">
+                🌐 公開ページ
+              </a>
+            </div>
             <div class="editor-actions">
               <button class="btn btn-danger" id="deleteBtn">削除</button>
               <button class="btn btn-primary" id="saveBtn">保存</button>
@@ -104,8 +113,29 @@
               <textarea id="magazineArticles" rows="5" placeholder="2025-01-22-first&#10;2025-01-23-second"></textarea>
             </div>
 
+            <!-- 辞書専用フィールド -->
+            <div id="dictionaryFieldsGroup" style="display: none;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>読み仮名</label>
+                  <input type="text" id="dictReading" placeholder="例: まーくだうん">
+                </div>
+                <div class="form-group">
+                  <label>カテゴリ</label>
+                  <input type="text" id="dictCategory" placeholder="例: WEB技術, 記法, プログラミング">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>関連用語（カンマ区切りのスラッグ）</label>
+                <input type="text" id="dictRelated" placeholder="例: html, css, javascript">
+              </div>
+            </div>
+
             <div class="form-group">
-              <label>本文 (Markdown)</label>
+              <div class="editor-body-header">
+                <label>本文 (Markdown)</label>
+                <button type="button" class="btn btn-ghost btn-sm" id="togglePreviewBtn">👁️ プレビュー</button>
+              </div>
               <div class="editor-toolbar">
                 <button type="button" class="toolbar-btn" data-action="bold" title="太字">B</button>
                 <button type="button" class="toolbar-btn" data-action="italic" title="斜体">I</button>
@@ -116,7 +146,16 @@
                 <button type="button" class="toolbar-btn" data-action="h2" title="見出し2">H2</button>
                 <button type="button" class="toolbar-btn" data-action="h3" title="見出し3">H3</button>
               </div>
-              <textarea id="articleBody" rows="20" placeholder="Markdown で記述..."></textarea>
+              <div class="editor-body-container">
+                <textarea id="articleBody" rows="20" placeholder="Markdown で記述..."></textarea>
+                <div id="previewPanel" class="preview-panel" style="display: none;">
+                  <div class="preview-panel-header">
+                    <span>📖 プレビュー</span>
+                    <span class="preview-status" id="previewStatus"></span>
+                  </div>
+                  <div id="previewContent" class="preview-content content"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -125,8 +164,9 @@
         <div id="imagesView" class="images-view" style="display: none;">
           <div class="upload-area" id="uploadArea">
             <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
-            <p>📁 ここにドラッグ＆ドロップ、またはクリックしてアップロード</p>
+            <p>📁 ここにドラッグ＆ドロップ、またはクリックしてアップロード（複数選択可）</p>
           </div>
+          <div id="imageUploadProgress" class="upload-progress-container"></div>
           <div id="imageGrid" class="image-grid">
           </div>
         </div>
@@ -135,8 +175,9 @@
         <div id="filesView" class="files-view" style="display: none;">
           <div class="upload-area" id="fileUploadArea">
             <input type="file" id="fileFileInput" multiple style="display: none;">
-            <p>📁 ここにドラッグ＆ドロップ、またはクリックしてアップロード</p>
+            <p>📁 ここにドラッグ＆ドロップ、またはクリックしてアップロード（複数選択可）</p>
           </div>
+          <div id="fileUploadProgress" class="upload-progress-container"></div>
           <div id="fileList" class="file-list">
           </div>
         </div>
@@ -253,4 +294,5 @@
 
   <script src="/static/admin.js"></script>
 </body>
+
 </html>
