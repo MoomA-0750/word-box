@@ -1,3 +1,15 @@
+---
+title: code-block-tasting
+date: 2026-02-18
+emoji: 📝
+tags: []
+listed: true
+quicklook: 
+---
+
+code-block-tasting
+
+```javascript
 // server.js
 const http = require('http');
 const fs = require('fs-extra');
@@ -392,7 +404,7 @@ async function renderArticlePage(dir, slug, res) {
   const allPosts = await getPosts();
   const allMagazines = await getMagazines();
   const allDictEntries = await getDictionaryEntries();
-  const html = await parseMarkdown(markdown, allPosts, allMagazines, allDictEntries);
+  const html = parseMarkdown(markdown, allPosts, allMagazines, allDictEntries);
 
   // マガジン情報を取得（postsディレクトリの記事のみ）
   let magazineTocHtml = '';
@@ -589,7 +601,7 @@ http.createServer(async (req, res) => {
       }).join('\n');
 
       // マガジン本文をMarkdownパース
-      const bodyHtml = magazine.body ? await parseMarkdown(magazine.body, allPosts) : '';
+      const bodyHtml = magazine.body ? parseMarkdown(magazine.body, allPosts) : '';
 
       const content = `
         <div class="magazine-detail">
@@ -712,7 +724,7 @@ http.createServer(async (req, res) => {
       const allPosts = await getPosts();
       const allMagazines = await getMagazines();
       const allDictEntries = await getDictionaryEntries();
-      const bodyHtml = await parseMarkdown(markdown, allPosts, allMagazines, allDictEntries);
+      const bodyHtml = parseMarkdown(markdown, allPosts, allMagazines, allDictEntries);
 
       // 関連用語のHTML
       let relatedHtml = '';
@@ -831,3 +843,5 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
+
+```

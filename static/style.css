@@ -724,6 +724,33 @@ article {
   line-height: 1.5;
 }
 
+/* シンタックスハイライト（CodeMirrorトークン / VS Code ダークテーマ風） */
+.code-block pre code .cm-keyword    { color: #c586c0; }
+.code-block pre code .cm-atom       { color: #569cd6; }
+.code-block pre code .cm-number     { color: #b5cea8; }
+.code-block pre code .cm-def        { color: #9cdcfe; }
+.code-block pre code .cm-variable   { color: #9cdcfe; }
+.code-block pre code .cm-variable-2 { color: #9cdcfe; }
+.code-block pre code .cm-variable-3 { color: #4ec9b0; }
+.code-block pre code .cm-type       { color: #4ec9b0; }
+.code-block pre code .cm-property   { color: #9cdcfe; }
+.code-block pre code .cm-operator   { color: #d4d4d4; }
+.code-block pre code .cm-comment    { color: #6a9955; font-style: italic; }
+.code-block pre code .cm-string     { color: #ce9178; }
+.code-block pre code .cm-string-2   { color: #ce9178; }
+.code-block pre code .cm-meta       { color: #9cdcfe; }
+.code-block pre code .cm-qualifier  { color: #4ec9b0; }
+.code-block pre code .cm-builtin    { color: #dcdcaa; }
+.code-block pre code .cm-bracket    { color: #d4d4d4; }
+.code-block pre code .cm-tag        { color: #569cd6; }
+.code-block pre code .cm-attribute  { color: #9cdcfe; }
+.code-block pre code .cm-hr         { color: #6a9955; }
+.code-block pre code .cm-link       { color: #ce9178; text-decoration: underline; }
+.code-block pre code .cm-error      { color: #f44747; }
+
+/* m- プレフィックス付きトークン（モード名複合） */
+.code-block pre code [class*="m-"] { /* 継承 */ }
+
 /* 画像 */
 .content img {
   max-width: 100%;
