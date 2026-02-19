@@ -44,6 +44,7 @@ const elements = {
   tagList: document.getElementById('tagList'),
   magazineArticlesGroup: document.getElementById('magazineArticlesGroup'),
   dictionaryFieldsGroup: document.getElementById('dictionaryFieldsGroup'),
+  articleExtraFieldsGroup: document.getElementById('articleExtraFieldsGroup'),
   metadataModal: document.getElementById('metadataModal'),
   closeMetadataModal: document.getElementById('closeMetadataModal'),
   cancelMetadata: document.getElementById('cancelMetadata'),
@@ -304,6 +305,10 @@ function showEditor() {
   // 辞書用フィールド表示切り替え
   elements.dictionaryFieldsGroup.style.display = state.currentSection === 'dictionary' ? 'block' : 'none';
 
+  // 記事用フィールド表示切り替え（posts/topics）
+  const isArticle = state.currentSection === 'posts' || state.currentSection === 'topics';
+  elements.articleExtraFieldsGroup.style.display = isArticle ? 'block' : 'none';
+
   // 公開ページリンクを更新
   updatePublicPageLink();
 }
@@ -393,6 +398,10 @@ function clearForm() {
   document.getElementById('dictCategory').value = '';
   document.getElementById('dictRelated').value = '';
 
+  // 記事用フィールドをクリア
+  document.getElementById('articleRelated').value = '';
+  document.getElementById('articleKeywords').value = '';
+
   // プレビューもクリア
   elements.previewContent.innerHTML = '';
   elements.previewStatus.textContent = '';
@@ -418,6 +427,12 @@ function fillForm(article) {
     document.getElementById('dictReading').value = article.metadata.reading || '';
     document.getElementById('dictCategory').value = article.metadata.category || '';
     document.getElementById('dictRelated').value = (article.metadata.related || []).join(', ');
+  }
+
+  // 記事用フィールドを入力（posts/topics）
+  if (state.currentSection === 'posts' || state.currentSection === 'topics') {
+    document.getElementById('articleRelated').value = (article.metadata.related || []).join(', ');
+    document.getElementById('articleKeywords').value = (article.metadata.keywords || []).join(', ');
   }
 
   // フォーム入力後にプレビューと公開リンクを更新
@@ -456,6 +471,10 @@ async function saveArticle() {
     metadata.related = relatedValue ? relatedValue.split(',').map(s => s.trim()).filter(s => s) : [];
   } else {
     metadata.quicklook = desc;
+    const relatedValue = document.getElementById('articleRelated').value;
+    metadata.related = relatedValue ? relatedValue.split(',').map(s => s.trim()).filter(s => s) : [];
+    const keywordsValue = document.getElementById('articleKeywords').value;
+    metadata.keywords = keywordsValue ? keywordsValue.split(',').map(s => s.trim()).filter(s => s) : [];
   }
 
   const body = document.getElementById('articleBody').value;

@@ -3088,6 +3088,27 @@ footer {
   font-weight: 500;
 }
 
+/* 関連記事セクション */
+.related-section {
+  margin-top: 32px;
+}
+
+.related-section-heading {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.related-section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.related-section-list .article-card {
+  margin: 0 0 8px 0;
+}
+
 /* 辞書埋め込みカード（記事内バナー） */
 .dictionary-card-embed {
   display: block;

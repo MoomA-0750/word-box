@@ -68,6 +68,7 @@ async function buildSearchIndex() {
         title: metadata.title || 'Untitled',
         content: body,
         tags: metadata.tags || [],
+        keywords: metadata.keywords || [],
         type: 'post',
         emoji: metadata.emoji || '📄',
         date: metadata.date
@@ -90,6 +91,7 @@ async function buildSearchIndex() {
         title: metadata.title || 'Untitled',
         content: body,
         tags: metadata.tags || [],
+        keywords: metadata.keywords || [],
         type: 'topic',
         emoji: metadata.emoji || '📝',
         date: metadata.date
@@ -176,6 +178,8 @@ async function getPostsFromDir(dir, onlyListed = false) {
       tags: metadata.tags || [],
       quicklook: metadata.quicklook || '',
       listed: listed,
+      related: metadata.related || [],
+      keywords: metadata.keywords || [],
       file: file
     });
   }
@@ -377,6 +381,79 @@ function renderMagazineNav(magazineInfo, allPosts) {
   return navHtml;
 }
 
+// 関連記事のHTML生成
+function renderRelatedArticles(currentSlug, currentType, metadata, allPosts, allTopics) {
+  const relatedSlugs = metadata.related || [];
+  const currentTags = metadata.tags || [];
+
+  // 全記事を統合（posts/topics）
+  const allArticles = [
+    ...allPosts.map(p => ({ ...p, type: 'posts' })),
+    ...allTopics.map(p => ({ ...p, type: 'topics' }))
+  ];
+
+  // バナーカード形式でレンダリング
+  const renderCard = (article) => {
+    const urlPrefix = article.type === 'posts' ? '/posts' : '/topics';
+    const tagsHtml = article.tags.length > 0
+      ? `<div class="tags tags-small">${article.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>`
+      : '';
+    const subtitleHtml = article.quicklook
+      ? `<span class="article-quicklook">${escapeHtml(article.quicklook)}</span>`
+      : `<time>${escapeHtml(article.date)}</time>`;
+    return `<a href="${urlPrefix}/${article.slug}" class="article-card">
+      <div class="article-icon">${article.emoji}</div>
+      <div class="article-content">
+        <div class="article-title">${escapeHtml(article.title)}</div>
+        <div class="article-meta">
+          ${subtitleHtml}
+          ${tagsHtml}
+        </div>
+      </div>
+      <div class="article-arrow">→</div>
+    </a>`;
+  };
+
+  let html = '';
+
+  // 手動指定の関連記事
+  const manualRelated = relatedSlugs.map(relSlug => {
+    return allArticles.find(a => a.slug === relSlug);
+  }).filter(a => a);
+
+  if (manualRelated.length > 0) {
+    html += `<div class="related-section">
+      <h3 class="related-section-heading">関連記事</h3>
+      <div class="related-section-list">${manualRelated.map(renderCard).join('')}</div>
+    </div>`;
+  }
+
+  // 同タグの記事を自動取得（自分自身と手動指定分を除く）
+  const manualSlugs = new Set(relatedSlugs);
+  if (currentTags.length > 0) {
+    let tagRelated = allArticles.filter(a => {
+      if (a.slug === currentSlug) return false;
+      if (manualSlugs.has(a.slug)) return false;
+      return a.tags.some(tag => currentTags.includes(tag));
+    });
+    tagRelated.sort((a, b) => {
+      const aCommon = a.tags.filter(t => currentTags.includes(t)).length;
+      const bCommon = b.tags.filter(t => currentTags.includes(t)).length;
+      return bCommon - aCommon;
+    });
+    tagRelated = tagRelated.slice(0, 5);
+
+    if (tagRelated.length > 0) {
+      html += `<div class="related-section">
+        <h3 class="related-section-heading">同じタグを持つ記事</h3>
+        <div class="related-section-list">${tagRelated.map(renderCard).join('')}</div>
+      </div>`;
+    }
+  }
+
+  return html;
+}
+
 // 記事ページレンダリング
 async function renderArticlePage(dir, slug, res) {
   const mdFile = `${dir}/${slug}.md`;
@@ -403,12 +480,18 @@ async function renderArticlePage(dir, slug, res) {
     magazineNavHtml = renderMagazineNav(magazineInfo, allPosts);
   }
 
+  // 関連記事のHTML生成
+  const allTopics = await getTopics();
+  const currentType = dir === './content/posts' ? 'posts' : 'topics';
+  const relatedHtml = renderRelatedArticles(slug, currentType, metadata, allPosts, allTopics);
+
   const postHtml = applyTemplate(templates.post, {
     title: metadata.title || 'Untitled',
     date: metadata.date || '',
     emoji: metadata.emoji || '📄',
     tags: renderTagsHtml(metadata.tags),
     content: html,
+    related: relatedHtml,
     magazineToc: magazineTocHtml,
     magazineNav: magazineNavHtml
   });
