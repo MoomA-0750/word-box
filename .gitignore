@@ -1,0 +1,6 @@
+# ユーザーコンテンツ (記事・辞書・マガジン等)
+content/
+
+# アップロードされた画像・ファイル
+static/images/
+static/files/

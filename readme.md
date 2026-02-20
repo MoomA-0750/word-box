@@ -1,7 +1,7 @@
 ## プロジェクト概要
 
 **プロジェクト名**: WordBox
-**種別**: シンプルなMarkdownブログシステム
+**種別**: Markdownブログシステム
 **目的**: オフライン環境（ネットワークから隔離されたRHEL 10サーバー）で動作する、Node.js製のブログ
 
 ## 環境の制約条件
@@ -50,26 +50,34 @@ wordbox/
 ├── lib/
 │   ├── frontmatter.js    # Front Matter (YAML風メタデータ) パーサー
 │   ├── markdown.js       # Markdownパーサー
+│   ├── syntax-highlight.js # シンタックスハイライター
 │   ├── search.js         # 全文検索エンジン
 │   ├── admin-router.js   # 管理画面ルーター (HTML/CSS/JS含む)
 │   └── admin-auth.js     # 管理画面認証モジュール
-├── content/
+├── content/              # ユーザーコンテンツ (.gitignore対象)
 │   ├── posts/            # Markdown記事ファイル
 │   ├── topics/           # トピック記事ファイル
-│   └── magazines/        # マガジン定義ファイル
-├── templates/            # HTMLテンプレート
+│   ├── magazines/        # マガジン定義ファイル
+│   └── dictionary/       # 辞書エントリファイル
+├── templates/
+│   ├── admin/            # 管理画面HTMLテンプレート
 │   ├── layout.html       # 全体レイアウト
 │   ├── post.html         # 記事ページ
 │   ├── index.html        # トップページ
-│   └── search.html       # 検索結果ページ
-├── static/               # 静的ファイル
+│   ├── search.html       # 検索結果ページ
+│   ├── dictionary.html   # 辞書一覧ページ
+│   └── dictionary-entry.html # 辞書エントリページ
+├── static/
 │   ├── style.css         # スタイルシート
-│   ├── code-copy.js      # コードコピー・カードクリック機能
+│   ├── main.js           # クライアントサイドJavaScript (カードクリック等)
 │   ├── admin.js          # 管理画面JavaScript
-│   └── images/           # 画像ディレクトリ
-│       └── metadata.json # 画像メタデータ (名前、タグ、alt等)
-├── server.js             # HTTPサーバー (動的生成型)
-└── INFO.md               # このファイル
+│   ├── highlighter.js    # シンタックスハイライタークライアントJS
+│   ├── highlighter/      # ハイライター言語定義ファイル
+│   ├── images/           # 画像ディレクトリ (.gitignore対象)
+│   │   └── metadata.json
+│   └── files/            # ファイルディレクトリ (.gitignore対象)
+│       └── metadata.json
+└── server.js             # HTTPサーバー (動的生成型)
 ```
 
 ## Front Matter仕様
@@ -100,6 +108,8 @@ quicklook: 記事カード用の短い説明
 | quicklook | string | "" | 記事カードのサブタイトル |
 | description | string | "" | マガジンの説明文 |
 | articles | string[] | [] | マガジン収録記事のslug配列 |
+| keywords | string[] | [] | 辞書エントリの関連キーワード |
+| related | string[] | [] | 辞書エントリの関連エントリslug配列 |
 
 ## Markdown記法
 
@@ -147,6 +157,8 @@ quicklook: 記事カード用の短い説明
 ```
 ````
 
+シンタックスハイライトは`lib/syntax-highlight.js`と`static/highlighter/`で処理される。
+
 ### カスタムブロック
 
 **外部リンク (ブックマークカード)**:
@@ -184,8 +196,6 @@ icon: 📚
 ```markdown
 > [!NOTE]
 > ノート内容
-> - リストも
-> - 書けます
 
 > [!TIP]
 > ヒント内容
@@ -213,6 +223,8 @@ icon: 📚
 | `/magazines` | マガジン一覧ページ |
 | `/magazines/:slug` | マガジン詳細ページ |
 | `/tags/:tag` | タグフィルタページ |
+| `/dictionary` | 辞書一覧ページ |
+| `/dictionary/:slug` | 辞書エントリページ |
 | `/search` | 検索結果ページ |
 | `/static/*` | 静的ファイル配信 |
 
@@ -243,12 +255,22 @@ icon: 📚
 | GET | `/admin/api/magazines/:id` | マガジン詳細取得 |
 | PUT | `/admin/api/magazines/:id` | マガジン更新 |
 | DELETE | `/admin/api/magazines/:id` | マガジン削除 |
+| GET | `/admin/api/dictionary` | 辞書一覧取得 |
+| POST | `/admin/api/dictionary` | 辞書エントリ作成 |
+| GET | `/admin/api/dictionary/:id` | 辞書エントリ詳細取得 |
+| PUT | `/admin/api/dictionary/:id` | 辞書エントリ更新 |
+| DELETE | `/admin/api/dictionary/:id` | 辞書エントリ削除 |
 | GET | `/admin/api/images` | 画像一覧取得 |
 | POST | `/admin/api/images` | 画像アップロード |
 | DELETE | `/admin/api/images/:filename` | 画像削除 |
 | PUT | `/admin/api/images/:filename/metadata` | 画像メタデータ更新 |
+| GET | `/admin/api/files` | ファイル一覧取得 |
+| POST | `/admin/api/files` | ファイルアップロード |
+| DELETE | `/admin/api/files/:filename` | ファイル削除 |
+| PUT | `/admin/api/files/:filename/metadata` | ファイルメタデータ更新 |
 | GET | `/admin/api/tags` | タグ一覧取得 |
 | POST | `/admin/api/rebuild-index` | 検索インデックス再構築 |
+| POST | `/admin/api/preview` | Markdownプレビュー生成 |
 
 ## 技術的な特徴
 
@@ -258,13 +280,14 @@ icon: 📚
 - 記事追加時はファイルを置くだけ (再起動不要)
 
 ### 全文検索機能
-- **インメモリインデックス**: サーバー起動時に全コンテンツをインデックス化
+- **インメモリインデックス**: サーバー起動時に全コンテンツをインデックス化 (posts/topics/magazines/dictionary)
 - **重み付け検索**: タイトル > タグ > 本文 の優先度でスコアリング
 - **スニペット生成**: 検索語周辺のテキストを抜粋しハイライト表示
 - **Markdown除外**: Markdown構文を除去してプレーンテキストのみを検索対象化
 
 ### 自作コンポーネント
 - **Markdownパーサー**: 完全自作 (`lib/markdown.js`)
+- **シンタックスハイライター**: 完全自作 (`lib/syntax-highlight.js` + `static/highlighter/`)
 - **Front Matterパーサー**: YAML風の簡易パーサー (`lib/frontmatter.js`)
 - **テンプレートエンジン**: シンプルな`{{variable}}`置換
 
@@ -276,7 +299,6 @@ icon: 📚
 
 ### サーバー起動
 ```bash
-cd ~/Documents/wordbox
 node server.js
 ```
 
@@ -284,7 +306,7 @@ node server.js
 1. `content/posts/`または`content/topics/`ディレクトリに`.md`ファイルを作成 (LF改行)
 2. Front Matterを記述
 3. Markdownで本文を書く
-4. 画像は`static/images/`に配置
+4. 画像は`static/images/`に配置、ファイルは`static/files/`に配置
 
 ### アクセス
 - `http://localhost:3000` または設定されたIPアドレス
@@ -298,7 +320,7 @@ node server.js
 ## 管理画面
 
 ### 概要
-ブラウザベースの管理画面で、記事・トピック・マガジン・画像を管理できます。
+ブラウザベースの管理画面で、記事・トピック・マガジン・辞書・画像・ファイルを管理できます。
 
 ### アクセス方法
 1. `http://localhost:3000/admin` にアクセス
@@ -321,36 +343,37 @@ WORDBOX_ADMIN_PASSWORD=mysecretpassword node server.js
 | 記事管理 | 記事の一覧表示、作成、編集、削除 |
 | トピック管理 | トピックの一覧表示、作成、編集、削除 |
 | マガジン管理 | マガジンの管理、収録記事の順序設定 |
+| 辞書管理 | 辞書エントリの一覧表示、作成、編集、削除 |
 | 画像管理 | ドラッグ＆ドロップでアップロード、一覧表示、削除、メタデータ編集 |
+| ファイル管理 | ファイルのアップロード、一覧表示、削除、メタデータ編集 |
 | 画像メタデータ | 各画像に名前、タグ、説明、alt属性を設定可能 |
 | タグ一覧 | 使用中のタグと記事数を表示 |
+| Markdownプレビュー | エディタでリアルタイムにHTMLプレビューを確認 |
 | 検索インデックス再構築 | 手動で再構築可能 |
 
 ### ファイル名について
 - **新規記事作成時**: UUID形式のIDが自動生成される（カスタムIDも設定可能）
-- **画像アップロード時**: ファイル名は自動的にUUID形式に変換される
+- **画像・ファイルアップロード時**: ファイル名は自動的にUUID形式に変換される
 
 ### エディタ機能
 - Markdownツールバー (太字、斜体、コード、リンク、画像、見出し)
 - 画像挿入モーダル (アップロード済み画像から選択)
+- リアルタイムMarkdownプレビュー
 - リアルタイム検索フィルタ
 
-### 画像メタデータ管理
-各画像に以下のメタデータを設定できます：
+### 画像・ファイルメタデータ管理
+各画像/ファイルに以下のメタデータを設定できます：
 
 | 項目 | 説明 |
 |------|------|
-| 名前 | 画像の管理用名前（画像一覧に表示） |
-| Alt属性 | 記事に挿入する際の`![この部分](url)`に使用される代替テキスト |
-| 説明 | 画像の詳細説明 |
-| タグ | カンマ区切りでタグを設定（例: "風景, 夕日, 海"） |
+| 名前 | 管理用名前（一覧に表示） |
+| Alt属性 | 画像挿入時の`![この部分](url)`に使用される代替テキスト (画像のみ) |
+| 説明 | 詳細説明 |
+| タグ | カンマ区切りでタグを設定（例: "資料, 設計書"） |
 
-**メタデータの保存先**: `static/images/metadata.json`（単一JSONファイル）
-
-**画像挿入時の動作**:
-- 画像選択時、設定されたalt属性が自動的に使用される
-- alt未設定の場合は「名前」を使用
-- 名前も未設定の場合は「画像」と表示
+**メタデータの保存先**:
+- 画像: `static/images/metadata.json`
+- ファイル: `static/files/metadata.json`
 
 ## 今後の拡張案 (未実装)
 
