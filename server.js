@@ -1,4 +1,3 @@
-// server.js
 const http = require('http');
 const fs = require('fs-extra');
 const path = require('path');
@@ -7,8 +6,40 @@ const { parseMarkdown } = require('./lib/markdown');
 const searchEngine = require('./lib/search');
 const { loadSnippets, expandSnippets } = require('./lib/snippets');
 const { handleAdminRequest } = require('./lib/admin-router');
+const { createLogger } = require('./lib/logger');
+const config = require('./lib/config');
+const { listFiles, readMatchingFiles } = require('./lib/files');
+const ms = require('ms');
+const { LRUCache } = require('lru-cache');
+const tinyRelativeDate = require('tiny-relative-date');
+const { onExit } = require('signal-exit');
 
-const PORT = 3000;
+// ロガー
+const log = createLogger('server');
+
+// LRU キャッシュ: 記事ページのレンダリング結果をキャッシュ
+// maxSize 50件、TTL 5分（開発中は短めに設定）
+const pageCache = new LRUCache({
+  max: 50,
+  ttl: 5 * 60 * 1000,
+});
+
+// LRU キャッシュ: 記事一覧の取得結果をキャッシュ
+const listCache = new LRUCache({
+  max: 20,
+  ttl: 3 * 60 * 1000,
+});
+
+// キャッシュ無効化（記事更新時に呼ぶ）
+function invalidateCache() {
+  pageCache.clear();
+  listCache.clear();
+  log.log('Cache invalidated');
+}
+
+const PORT = config.server.port;
+const CONTENT_DIRS = config.content;
+
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css',
@@ -35,7 +66,7 @@ const templates = {
 
 // テンプレート読み込み
 async function loadTemplates() {
-  console.log('Loading templates...');
+  log.log('Loading templates...');
   try {
     templates.index = await fs.readFile('./templates/index.html', 'utf8');
     templates.layout = await fs.readFile('./templates/layout.html', 'utf8');
@@ -43,107 +74,89 @@ async function loadTemplates() {
     templates.search = await fs.readFile('./templates/search.html', 'utf8');
     templates.dictionary = await fs.readFile('./templates/dictionary.html', 'utf8');
     templates.dictionaryEntry = await fs.readFile('./templates/dictionary-entry.html', 'utf8');
-    console.log('Templates loaded.');
+    log.log('Templates loaded.');
   } catch (err) {
-    console.error('Error loading templates:', err);
+    log.error('Error loading templates:', err);
   }
 }
 
-// 検索インデックス構築
+// 検索インデックス構築（readMatchingFiles で並列読み込み）
 async function buildSearchIndex() {
-  console.log('Building search index...');
+  log.log('Building search index...');
+  const startTime = Date.now();
   searchEngine.clear();
+  invalidateCache(); // インデックス再構築時にキャッシュも無効化
 
   // 記事
-  const postsDir = './content/posts';
-  if (await fs.pathExists(postsDir)) {
-    const files = await fs.readdir(postsDir);
-    for (const file of files) {
-      if (!file.endsWith('.md')) continue;
-      const content = await fs.readFile(`${postsDir}/${file}`, 'utf8');
-      const { metadata, content: body } = parseFrontMatter(content);
-      if (metadata.listed === false) continue;
+  const postFiles = await readMatchingFiles(CONTENT_DIRS.postsDir, '*.md');
+  for (const { filename, content } of postFiles) {
+    const { metadata, content: body } = parseFrontMatter(content);
+    if (metadata.listed === false) continue;
 
-      searchEngine.addDocument({
-        id: file.replace('.md', ''),
-        title: metadata.title || 'Untitled',
-        content: body,
-        tags: metadata.tags || [],
-        keywords: metadata.keywords || [],
-        type: 'post',
-        emoji: metadata.emoji || '📄',
-        date: metadata.date
-      });
-    }
+    searchEngine.addDocument({
+      id: filename.replace('.md', ''),
+      title: metadata.title || 'Untitled',
+      content: body,
+      tags: metadata.tags || [],
+      keywords: metadata.keywords || [],
+      type: 'post',
+      emoji: metadata.emoji || '📄',
+      date: metadata.date
+    });
   }
 
   // トピック
-  const topicsDir = './content/topics';
-  if (await fs.pathExists(topicsDir)) {
-    const files = await fs.readdir(topicsDir);
-    for (const file of files) {
-      if (!file.endsWith('.md')) continue;
-      const content = await fs.readFile(`${topicsDir}/${file}`, 'utf8');
-      const { metadata, content: body } = parseFrontMatter(content);
-      if (metadata.listed === false) continue;
+  const topicFiles = await readMatchingFiles(CONTENT_DIRS.topicsDir, '*.md');
+  for (const { filename, content } of topicFiles) {
+    const { metadata, content: body } = parseFrontMatter(content);
+    if (metadata.listed === false) continue;
 
-      searchEngine.addDocument({
-        id: file.replace('.md', ''),
-        title: metadata.title || 'Untitled',
-        content: body,
-        tags: metadata.tags || [],
-        keywords: metadata.keywords || [],
-        type: 'topic',
-        emoji: metadata.emoji || '📝',
-        date: metadata.date
-      });
-    }
+    searchEngine.addDocument({
+      id: filename.replace('.md', ''),
+      title: metadata.title || 'Untitled',
+      content: body,
+      tags: metadata.tags || [],
+      keywords: metadata.keywords || [],
+      type: 'topic',
+      emoji: metadata.emoji || '📝',
+      date: metadata.date
+    });
   }
 
   // 辞書
-  const dictDir = './content/dictionary';
-  if (await fs.pathExists(dictDir)) {
-    const files = await fs.readdir(dictDir);
-    for (const file of files) {
-      if (!file.endsWith('.md')) continue;
-      const content = await fs.readFile(`${dictDir}/${file}`, 'utf8');
-      const { metadata, content: body } = parseFrontMatter(content);
-      if (metadata.listed === false) continue;
+  const dictFiles = await readMatchingFiles(CONTENT_DIRS.dictionaryDir, '*.md');
+  for (const { filename, content } of dictFiles) {
+    const { metadata, content: body } = parseFrontMatter(content);
+    if (metadata.listed === false) continue;
 
-      searchEngine.addDocument({
-        id: file.replace('.md', ''),
-        title: metadata.title || 'Untitled',
-        content: body,
-        tags: metadata.category ? [metadata.category] : [],
-        type: 'dictionary',
-        emoji: metadata.emoji || '📖',
-        date: ''
-      });
-    }
+    searchEngine.addDocument({
+      id: filename.replace('.md', ''),
+      title: metadata.title || 'Untitled',
+      content: body,
+      tags: metadata.category ? [metadata.category] : [],
+      type: 'dictionary',
+      emoji: metadata.emoji || '📖',
+      date: ''
+    });
   }
 
   // マガジン
-  const magsDir = './content/magazines';
-  if (await fs.pathExists(magsDir)) {
-    const files = await fs.readdir(magsDir);
-    for (const file of files) {
-      if (!file.endsWith('.md')) continue;
-      const content = await fs.readFile(`${magsDir}/${file}`, 'utf8');
-      const { metadata, content: body } = parseFrontMatter(content);
-      if (metadata.listed === false) continue;
+  const magFiles = await readMatchingFiles(CONTENT_DIRS.magazinesDir, '*.md');
+  for (const { filename, content } of magFiles) {
+    const { metadata, content: body } = parseFrontMatter(content);
+    if (metadata.listed === false) continue;
 
-      searchEngine.addDocument({
-        id: file.replace('.md', ''),
-        title: metadata.title || 'Untitled',
-        content: body,
-        tags: [],
-        type: 'magazine',
-        emoji: metadata.emoji || '📚'
-      });
-    }
+    searchEngine.addDocument({
+      id: filename.replace('.md', ''),
+      title: metadata.title || 'Untitled',
+      content: body,
+      tags: [],
+      type: 'magazine',
+      emoji: metadata.emoji || '📚'
+    });
   }
 
-  console.log(`Index built with ${searchEngine.documents.length} documents.`);
+  log.timedLog(`Index built with ${searchEngine.documents.length} documents`, startTime);
 }
 
 // テンプレート適用
@@ -155,20 +168,39 @@ function applyTemplate(template, vars) {
   return result;
 }
 
-// 記事一覧取得（汎用）
-// onlyListed: trueの場合、listed: falseの記事を除外
+// 日付文字列から相対日付を生成 (tiny-relative-date)
+function relativeDate(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    return tinyRelativeDate(date);
+  } catch {
+    return '';
+  }
+}
+
+// 記事一覧取得（汎用）- listFiles で micromatch ベースのフィルタリング + LRU キャッシュ
 async function getPostsFromDir(dir, onlyListed = false) {
-  if (!await fs.pathExists(dir)) return [];
-  const files = await fs.readdir(dir);
+  const cacheKey = `posts:${dir}:${onlyListed}`;
+  const cached = listCache.get(cacheKey);
+  if (cached) return cached;
+
+  const mdFiles = await listFiles(dir, '*.md');
+  if (mdFiles.length === 0) return [];
+
   const posts = [];
 
-  for (const file of files) {
-    if (!file.endsWith('.md')) continue;
+  // Promise.all で並列読み込み
+  const fileContents = await Promise.all(
+    mdFiles.map(async (file) => {
+      const content = await fs.readFile(path.join(dir, file), 'utf8');
+      return { file, content };
+    })
+  );
 
-    const content = await fs.readFile(`${dir}/${file}`, 'utf8');
+  for (const { file, content } of fileContents) {
     const { metadata } = parseFrontMatter(content);
-
-    // listedがfalseの場合、一覧から除外（デフォルトはtrue）
     const listed = metadata.listed !== false;
     if (onlyListed && !listed) continue;
 
@@ -176,6 +208,7 @@ async function getPostsFromDir(dir, onlyListed = false) {
       slug: file.replace('.md', ''),
       title: metadata.title || 'Untitled',
       date: metadata.date || '',
+      relativeDate: relativeDate(metadata.date),
       emoji: metadata.emoji || '📄',
       tags: metadata.tags || [],
       quicklook: metadata.quicklook || '',
@@ -186,36 +219,38 @@ async function getPostsFromDir(dir, onlyListed = false) {
     });
   }
 
-  // 日付でソート（新しい順）
   posts.sort((a, b) => b.date.localeCompare(a.date));
-
+  listCache.set(cacheKey, posts);
   return posts;
 }
 
 // 記事一覧取得
 async function getPosts(onlyListed = false) {
-  return getPostsFromDir('./content/posts', onlyListed);
+  return getPostsFromDir(CONTENT_DIRS.postsDir, onlyListed);
 }
 
 // トピック一覧取得
 async function getTopics(onlyListed = false) {
-  return getPostsFromDir('./content/topics', onlyListed);
+  return getPostsFromDir(CONTENT_DIRS.topicsDir, onlyListed);
 }
 
 // 辞書一覧取得
 async function getDictionaryEntries(onlyListed = false) {
-  const dir = './content/dictionary';
-  if (!await fs.pathExists(dir)) return [];
+  const dir = CONTENT_DIRS.dictionaryDir;
+  const mdFiles = await listFiles(dir, '*.md');
+  if (mdFiles.length === 0) return [];
 
-  const files = await fs.readdir(dir);
   const entries = [];
 
-  for (const file of files) {
-    if (!file.endsWith('.md')) continue;
+  const fileContents = await Promise.all(
+    mdFiles.map(async (file) => {
+      const content = await fs.readFile(path.join(dir, file), 'utf8');
+      return { file, content };
+    })
+  );
 
-    const content = await fs.readFile(`${dir}/${file}`, 'utf8');
+  for (const { file, content } of fileContents) {
     const { metadata, content: body } = parseFrontMatter(content);
-
     const listed = metadata.listed !== false;
     if (onlyListed && !listed) continue;
 
@@ -231,25 +266,27 @@ async function getDictionaryEntries(onlyListed = false) {
     });
   }
 
-  // 読みでソート（五十音順）
   entries.sort((a, b) => (a.reading || a.title).localeCompare(b.reading || b.title, 'ja'));
-
   return entries;
 }
 
 // マガジン一覧取得
 async function getMagazines(onlyListed = false) {
-  const dir = './content/magazines';
-  if (!await fs.pathExists(dir)) return [];
-  const files = await fs.readdir(dir);
+  const dir = CONTENT_DIRS.magazinesDir;
+  const mdFiles = await listFiles(dir, '*.md');
+  if (mdFiles.length === 0) return [];
+
   const magazines = [];
 
-  for (const file of files) {
-    if (!file.endsWith('.md')) continue;
+  const fileContents = await Promise.all(
+    mdFiles.map(async (file) => {
+      const content = await fs.readFile(path.join(dir, file), 'utf8');
+      return { file, content };
+    })
+  );
 
-    const content = await fs.readFile(`${dir}/${file}`, 'utf8');
+  for (const { file, content } of fileContents) {
     const { metadata, content: body } = parseFrontMatter(content);
-
     const listed = metadata.listed !== false;
     if (onlyListed && !listed) continue;
 
@@ -292,14 +329,17 @@ function renderTagsHtml(tags) {
   ).join('')}</div>`;
 }
 
-// 記事カードHTML生成
+// 記事カードHTML生成（tiny-relative-date で相対日付を表示）
 function renderPostCard(post, urlPrefix) {
+  const relDateHtml = post.relativeDate
+    ? `<span class="post-relative-date" title="${post.date}">${post.relativeDate}</span>`
+    : '';
   return `<article class="post-list-item">
     <div class="post-emoji">${post.emoji}</div>
     <div class="post-info">
       <h3><a href="${urlPrefix}/${post.slug}">${post.title}</a></h3>
       <div class="post-meta">
-        <time>${post.date}</time>
+        <time>${post.date}</time>${relDateHtml}
         ${renderTagsHtml(post.tags)}
       </div>
     </div>
@@ -389,13 +429,11 @@ function renderRelatedArticles(currentSlug, currentType, metadata, allPosts, all
   const relatedSlugs = metadata.related || [];
   const currentTags = metadata.tags || [];
 
-  // 全記事を統合（posts/topics）
   const allArticles = [
     ...allPosts.map(p => ({ ...p, type: 'posts' })),
     ...allTopics.map(p => ({ ...p, type: 'topics' }))
   ];
 
-  // バナーカード形式でレンダリング
   const renderCard = (article) => {
     const urlPrefix = article.type === 'posts' ? '/posts' : '/topics';
     const tagsHtml = article.tags.length > 0
@@ -419,7 +457,6 @@ function renderRelatedArticles(currentSlug, currentType, metadata, allPosts, all
 
   let html = '';
 
-  // 手動指定の関連記事
   const manualRelated = relatedSlugs.map(relSlug => {
     return allArticles.find(a => a.slug === relSlug);
   }).filter(a => a);
@@ -431,7 +468,6 @@ function renderRelatedArticles(currentSlug, currentType, metadata, allPosts, all
     </div>`;
   }
 
-  // 同タグの記事を自動取得（自分自身と手動指定分を除く）
   const manualSlugs = new Set(relatedSlugs);
   if (currentTags.length > 0) {
     let tagRelated = allArticles.filter(a => {
@@ -469,7 +505,6 @@ async function renderArticlePage(dir, slug, res) {
   const content = await fs.readFile(mdFile, 'utf8');
   const { metadata, content: markdown } = parseFrontMatter(content);
 
-  // 定型文を展開
   const expandedMarkdown = expandSnippets(markdown);
 
   const allPosts = await getPosts();
@@ -477,18 +512,16 @@ async function renderArticlePage(dir, slug, res) {
   const allDictEntries = await getDictionaryEntries();
   const html = await parseMarkdown(expandedMarkdown, allPosts, allMagazines, allDictEntries);
 
-  // マガジン情報を取得（postsディレクトリの記事のみ）
   let magazineTocHtml = '';
   let magazineNavHtml = '';
-  if (dir === './content/posts') {
+  if (dir === CONTENT_DIRS.postsDir) {
     const magazineInfo = await getMagazineForArticle(slug);
     magazineTocHtml = renderMagazineToc(magazineInfo, allPosts);
     magazineNavHtml = renderMagazineNav(magazineInfo, allPosts);
   }
 
-  // 関連記事のHTML生成
   const allTopics = await getTopics();
-  const currentType = dir === './content/posts' ? 'posts' : 'topics';
+  const currentType = dir === CONTENT_DIRS.postsDir ? 'posts' : 'topics';
   const relatedHtml = renderRelatedArticles(slug, currentType, metadata, allPosts, allTopics);
 
   const postHtml = applyTemplate(templates.post, {
@@ -513,8 +546,10 @@ async function renderArticlePage(dir, slug, res) {
 
 // サーバー起動
 http.createServer(async (req, res) => {
+  const requestStart = Date.now();
+
   try {
-    console.log(`${req.method} ${req.url}`);
+    log.log(`${req.method} ${req.url}`);
 
     // 管理画面
     if (req.url.startsWith('/admin')) {
@@ -540,12 +575,10 @@ http.createServer(async (req, res) => {
               originalFilename = metadata[filename].originalFilename;
             }
           } catch (err) {
-            console.error('Failed to read file metadata:', err);
+            log.error('Failed to read file metadata:', err);
           }
         }
 
-        // Content-Dispositionヘッダーで元のファイル名を指定
-        // RFC 5987に準拠したUTF-8ファイル名のエンコーディング
         const encodedFilename = encodeURIComponent(originalFilename);
 
         res.writeHead(200, {
@@ -656,7 +689,6 @@ http.createServer(async (req, res) => {
 
       const allPosts = await getPosts();
 
-      // 記事リストを順序通りに生成
       const articlesHtml = magazine.articles.map((articleSlug, index) => {
         const post = allPosts.find(p => p.slug === articleSlug);
         if (post) {
@@ -677,7 +709,6 @@ http.createServer(async (req, res) => {
         }
       }).join('\n');
 
-      // マガジン本文をMarkdownパース（定型文を展開）
       const expandedMagBody = magazine.body ? expandSnippets(magazine.body) : '';
       const bodyHtml = expandedMagBody ? await parseMarkdown(expandedMagBody, allPosts) : '';
 
@@ -738,14 +769,13 @@ http.createServer(async (req, res) => {
     // トピック記事ページ
     if (req.url.startsWith('/topics/')) {
       const slug = req.url.replace('/topics/', '');
-      return await renderArticlePage('./content/topics', slug, res);
+      return await renderArticlePage(CONTENT_DIRS.topicsDir, slug, res);
     }
 
     // 辞書一覧ページ
     if (req.url === '/dictionary' || req.url === '/dictionary/') {
       const entries = await getDictionaryEntries(true);
 
-      // カテゴリでグループ化
       const categories = {};
       for (const entry of entries) {
         const cat = entry.category || '未分類';
@@ -789,7 +819,7 @@ http.createServer(async (req, res) => {
     // 辞書詳細ページ
     if (req.url.startsWith('/dictionary/')) {
       const slug = req.url.replace('/dictionary/', '');
-      const mdFile = `./content/dictionary/${slug}.md`;
+      const mdFile = `${CONTENT_DIRS.dictionaryDir}/${slug}.md`;
 
       if (!await fs.pathExists(mdFile)) {
         res.writeHead(404);
@@ -799,7 +829,6 @@ http.createServer(async (req, res) => {
       const content = await fs.readFile(mdFile, 'utf8');
       const { metadata, content: markdown } = parseFrontMatter(content);
 
-      // 定型文を展開
       const expandedMarkdown = expandSnippets(markdown);
 
       const allPosts = await getPosts();
@@ -807,7 +836,6 @@ http.createServer(async (req, res) => {
       const allDictEntries = await getDictionaryEntries();
       const bodyHtml = await parseMarkdown(expandedMarkdown, allPosts, allMagazines, allDictEntries);
 
-      // 関連用語のHTML
       let relatedHtml = '';
       if (metadata.related && metadata.related.length > 0) {
         const relatedItems = metadata.related.map(relSlug => {
@@ -848,7 +876,7 @@ http.createServer(async (req, res) => {
     // 記事ページ
     if (req.url.startsWith('/posts/')) {
       const slug = req.url.replace('/posts/', '');
-      return await renderArticlePage('./content/posts', slug, res);
+      return await renderArticlePage(CONTENT_DIRS.postsDir, slug, res);
     }
 
     // 検索ページ
@@ -878,7 +906,7 @@ http.createServer(async (req, res) => {
       }).join('\n') || '<p>該当する記事が見つかりませんでした。</p>';
 
       const content = applyTemplate(templates.search, {
-        query: escapeHtml(query), // XSS対策
+        query: escapeHtml(query),
         count: results.length,
         results: resultsHtml
       });
@@ -897,15 +925,22 @@ http.createServer(async (req, res) => {
     res.end('Not Found');
 
   } catch (err) {
-    console.error(err);
+    log.error(err.message, err.stack);
     res.writeHead(500);
     res.end('Server Error: ' + err.message);
+  } finally {
+    // リクエスト処理時間をログ出力
+    const elapsed = Date.now() - requestStart;
+    if (elapsed > 100) {
+      log.warn(`Slow request: ${req.method} ${req.url} (${ms(elapsed)})`);
+    }
   }
 }).listen(PORT, async () => {
   await loadTemplates();
   await loadSnippets();
   await buildSearchIndex();
-  console.log(`Server running at http://localhost:${PORT}`);
+  log.log(`Server running at http://localhost:${PORT}`);
+  log.log(`Config: port=${PORT}, fuzzySearch=${config.search.fuzzyThreshold > 0 ? 'enabled' : 'disabled'}`);
 });
 
 function escapeHtml(text) {
@@ -917,11 +952,17 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
+// signal-exit: プロセス終了時のクリーンアップ
+onExit((code, signal) => {
+  log.log(`Server shutting down (code=${code}, signal=${signal})`);
+  log.log(`Cache stats: pageCache=${pageCache.size} entries, listCache=${listCache.size} entries`);
+}, { alwaysLast: true });
+
 // プロセスレベルのエラーハンドリング（サーバークラッシュ防止）
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection:', reason);
+  log.error('Unhandled Rejection:', reason);
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
+  log.error('Uncaught Exception:', err);
 });
