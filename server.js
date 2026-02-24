@@ -5,6 +5,7 @@ const path = require('path');
 const { parseFrontMatter } = require('./lib/frontmatter');
 const { parseMarkdown } = require('./lib/markdown');
 const searchEngine = require('./lib/search');
+const { loadSnippets, expandSnippets } = require('./lib/snippets');
 const { handleAdminRequest } = require('./lib/admin-router');
 
 const PORT = 3000;
@@ -157,6 +158,7 @@ function applyTemplate(template, vars) {
 // 記事一覧取得（汎用）
 // onlyListed: trueの場合、listed: falseの記事を除外
 async function getPostsFromDir(dir, onlyListed = false) {
+  if (!await fs.pathExists(dir)) return [];
   const files = await fs.readdir(dir);
   const posts = [];
 
@@ -238,6 +240,7 @@ async function getDictionaryEntries(onlyListed = false) {
 // マガジン一覧取得
 async function getMagazines(onlyListed = false) {
   const dir = './content/magazines';
+  if (!await fs.pathExists(dir)) return [];
   const files = await fs.readdir(dir);
   const magazines = [];
 
@@ -466,10 +469,13 @@ async function renderArticlePage(dir, slug, res) {
   const content = await fs.readFile(mdFile, 'utf8');
   const { metadata, content: markdown } = parseFrontMatter(content);
 
+  // 定型文を展開
+  const expandedMarkdown = expandSnippets(markdown);
+
   const allPosts = await getPosts();
   const allMagazines = await getMagazines();
   const allDictEntries = await getDictionaryEntries();
-  const html = await parseMarkdown(markdown, allPosts, allMagazines, allDictEntries);
+  const html = await parseMarkdown(expandedMarkdown, allPosts, allMagazines, allDictEntries);
 
   // マガジン情報を取得（postsディレクトリの記事のみ）
   let magazineTocHtml = '';
@@ -671,8 +677,9 @@ http.createServer(async (req, res) => {
         }
       }).join('\n');
 
-      // マガジン本文をMarkdownパース
-      const bodyHtml = magazine.body ? await parseMarkdown(magazine.body, allPosts) : '';
+      // マガジン本文をMarkdownパース（定型文を展開）
+      const expandedMagBody = magazine.body ? expandSnippets(magazine.body) : '';
+      const bodyHtml = expandedMagBody ? await parseMarkdown(expandedMagBody, allPosts) : '';
 
       const content = `
         <div class="magazine-detail">
@@ -731,7 +738,7 @@ http.createServer(async (req, res) => {
     // トピック記事ページ
     if (req.url.startsWith('/topics/')) {
       const slug = req.url.replace('/topics/', '');
-      return renderArticlePage('./content/topics', slug, res);
+      return await renderArticlePage('./content/topics', slug, res);
     }
 
     // 辞書一覧ページ
@@ -792,10 +799,13 @@ http.createServer(async (req, res) => {
       const content = await fs.readFile(mdFile, 'utf8');
       const { metadata, content: markdown } = parseFrontMatter(content);
 
+      // 定型文を展開
+      const expandedMarkdown = expandSnippets(markdown);
+
       const allPosts = await getPosts();
       const allMagazines = await getMagazines();
       const allDictEntries = await getDictionaryEntries();
-      const bodyHtml = await parseMarkdown(markdown, allPosts, allMagazines, allDictEntries);
+      const bodyHtml = await parseMarkdown(expandedMarkdown, allPosts, allMagazines, allDictEntries);
 
       // 関連用語のHTML
       let relatedHtml = '';
@@ -838,7 +848,7 @@ http.createServer(async (req, res) => {
     // 記事ページ
     if (req.url.startsWith('/posts/')) {
       const slug = req.url.replace('/posts/', '');
-      return renderArticlePage('./content/posts', slug, res);
+      return await renderArticlePage('./content/posts', slug, res);
     }
 
     // 検索ページ
@@ -893,6 +903,7 @@ http.createServer(async (req, res) => {
   }
 }).listen(PORT, async () => {
   await loadTemplates();
+  await loadSnippets();
   await buildSearchIndex();
   console.log(`Server running at http://localhost:${PORT}`);
 });

@@ -22,6 +22,7 @@
         <a href="#" class="nav-item" data-section="dictionary">📖 辞書</a>
         <a href="#" class="nav-item" data-section="images">🖼️ 画像</a>
         <a href="#" class="nav-item" data-section="files">📎 ファイル</a>
+        <a href="#" class="nav-item" data-section="snippets">📋 定型文</a>
         <a href="#" class="nav-item" data-section="tags">🏷️ タグ</a>
       </nav>
       <div class="sidebar-footer">
@@ -157,6 +158,7 @@
                 <button type="button" class="toolbar-btn" data-action="file" title="ファイル">📎</button>
                 <button type="button" class="toolbar-btn" data-action="h2" title="見出し2">H2</button>
                 <button type="button" class="toolbar-btn" data-action="h3" title="見出し3">H3</button>
+                <button type="button" class="toolbar-btn" data-action="snippet" title="定型文">📋</button>
               </div>
               <div class="editor-body-container">
                 <textarea id="articleBody" rows="20" placeholder="Markdown で記述..."></textarea>
@@ -194,6 +196,31 @@
           </div>
         </div>
 
+        <!-- 定型文管理 -->
+        <div id="snippetsView" class="snippets-view" style="display: none;">
+          <div id="snippetList" class="snippet-list">
+          </div>
+          <div id="snippetEditor" class="snippet-editor" style="display: none;">
+            <div class="form-group">
+              <label>キー名 (英数字とアンダースコアのみ)</label>
+              <input type="text" id="snippetKey" placeholder="例: author_name">
+            </div>
+            <div class="form-group">
+              <label>値 (テキストまたはMarkdown)</label>
+              <textarea id="snippetValue" rows="8" placeholder="展開される内容を入力..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>使い方</label>
+              <code id="snippetUsage" class="snippet-usage"></code>
+            </div>
+            <div class="snippet-editor-actions">
+              <button class="btn btn-ghost" id="cancelSnippet">キャンセル</button>
+              <button class="btn btn-danger" id="deleteSnippetBtn" style="display: none;">削除</button>
+              <button class="btn btn-primary" id="saveSnippetBtn">保存</button>
+            </div>
+          </div>
+        </div>
+
         <!-- タグ管理 -->
         <div id="tagsView" class="tags-view" style="display: none;">
           <div id="tagList" class="tag-list">
@@ -212,6 +239,20 @@
       </div>
       <div class="modal-body">
         <div id="modalImageGrid" class="image-grid modal-image-grid">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 定型文選択モーダル -->
+  <div id="snippetModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>定型文を挿入</h3>
+        <button class="modal-close" id="closeSnippetModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="modalSnippetList" class="modal-snippet-list">
         </div>
       </div>
     </div>

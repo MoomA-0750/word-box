@@ -6,6 +6,8 @@ const state = {
   images: [],
   files: [],
   tags: [],
+  snippets: [],
+  editingSnippetKey: null,
   editingId: null,
   isNew: false,
   editingImageFilename: null,
@@ -66,6 +68,18 @@ const elements = {
   fileMetadataTags: document.getElementById('fileMetadataTags'),
   imageUploadProgress: document.getElementById('imageUploadProgress'),
   fileUploadProgress: document.getElementById('fileUploadProgress'),
+  snippetsView: document.getElementById('snippetsView'),
+  snippetList: document.getElementById('snippetList'),
+  snippetEditor: document.getElementById('snippetEditor'),
+  snippetKey: document.getElementById('snippetKey'),
+  snippetValue: document.getElementById('snippetValue'),
+  snippetUsage: document.getElementById('snippetUsage'),
+  saveSnippetBtn: document.getElementById('saveSnippetBtn'),
+  deleteSnippetBtn: document.getElementById('deleteSnippetBtn'),
+  cancelSnippet: document.getElementById('cancelSnippet'),
+  snippetModal: document.getElementById('snippetModal'),
+  closeSnippetModal: document.getElementById('closeSnippetModal'),
+  modalSnippetList: document.getElementById('modalSnippetList'),
   publicPageLink: document.getElementById('publicPageLink'),
   togglePreviewBtn: document.getElementById('togglePreviewBtn'),
   previewPanel: document.getElementById('previewPanel'),
@@ -109,6 +123,19 @@ function setupEventListeners() {
   elements.closeMetadataModal.addEventListener('click', () => hideMetadataModal());
   elements.cancelMetadata.addEventListener('click', () => hideMetadataModal());
   elements.saveMetadata.addEventListener('click', () => saveImageMetadata());
+
+  // 定型文
+  elements.saveSnippetBtn.addEventListener('click', () => saveSnippetAction());
+  elements.deleteSnippetBtn.addEventListener('click', () => deleteSnippetAction());
+  elements.cancelSnippet.addEventListener('click', () => {
+    elements.snippetEditor.style.display = 'none';
+    state.editingSnippetKey = null;
+  });
+  elements.snippetKey.addEventListener('input', () => {
+    const key = elements.snippetKey.value.trim();
+    elements.snippetUsage.textContent = key ? `{% ${key} %}` : '';
+  });
+  elements.closeSnippetModal.addEventListener('click', () => hideSnippetModal());
 
   // ファイルメタデータモーダル
   elements.closeFileMetadataModal.addEventListener('click', () => hideFileMetadataModal());
@@ -191,6 +218,7 @@ async function loadSection(section) {
     dictionary: '辞書',
     images: '画像',
     files: 'ファイル',
+    snippets: '定型文',
     tags: 'タグ'
   };
   elements.sectionTitle.textContent = titles[section];
@@ -199,13 +227,16 @@ async function loadSection(section) {
   elements.listView.style.display = ['posts', 'topics', 'magazines', 'dictionary'].includes(section) ? 'block' : 'none';
   elements.imagesView.style.display = section === 'images' ? 'block' : 'none';
   elements.filesView.style.display = section === 'files' ? 'block' : 'none';
+  elements.snippetsView.style.display = section === 'snippets' ? 'block' : 'none';
   elements.tagsView.style.display = section === 'tags' ? 'block' : 'none';
-  elements.newBtn.style.display = ['posts', 'topics', 'magazines', 'dictionary'].includes(section) ? 'inline-flex' : 'none';
+  elements.newBtn.style.display = ['posts', 'topics', 'magazines', 'dictionary', 'snippets'].includes(section) ? 'inline-flex' : 'none';
 
   if (section === 'images') {
     await loadImages();
   } else if (section === 'files') {
     await loadFiles();
+  } else if (section === 'snippets') {
+    await loadSnippetList();
   } else if (section === 'tags') {
     await loadTags();
   } else {
@@ -266,6 +297,10 @@ function filterList() {
 
 // 新規作成
 function createNew() {
+  if (state.currentSection === 'snippets') {
+    createNewSnippet();
+    return;
+  }
   state.isNew = true;
   state.editingId = null;
   showEditor();
@@ -820,6 +855,9 @@ function handleToolbar(action) {
     case 'h3':
       replacement = `### ${selected}`;
       break;
+    case 'snippet':
+      showSnippetModal();
+      return;
   }
 
   textarea.value = text.substring(0, start) + replacement + text.substring(end);
@@ -852,6 +890,63 @@ async function showFileModal() {
 // ファイルモーダル非表示
 function hideFileModal() {
   elements.fileModal.style.display = 'none';
+}
+
+// 定型文モーダル表示
+async function showSnippetModal() {
+  try {
+    const res = await fetch('/admin/api/snippets');
+    const snippetList = await res.json();
+
+    if (snippetList.length === 0) {
+      elements.modalSnippetList.innerHTML = '<p class="empty-message">定型文がありません。先に「📋 定型文」セクションで登録してください。</p>';
+    } else {
+      elements.modalSnippetList.innerHTML = snippetList.map(snippet => {
+        const preview = snippet.value.length > 60
+          ? escapeHtml(snippet.value.substring(0, 60)) + '...'
+          : escapeHtml(snippet.value);
+        return `
+          <div class="modal-snippet-item" data-key="${escapeHtml(snippet.key)}">
+            <div class="modal-snippet-key"><code>{% ${escapeHtml(snippet.key)} %}</code></div>
+            <div class="modal-snippet-preview">${preview}</div>
+          </div>
+        `;
+      }).join('');
+
+      elements.modalSnippetList.querySelectorAll('.modal-snippet-item').forEach(item => {
+        item.addEventListener('click', () => {
+          insertSnippetToEditor(item.dataset.key);
+          hideSnippetModal();
+        });
+      });
+    }
+
+    elements.snippetModal.style.display = 'flex';
+  } catch (err) {
+    showToast('定型文の読み込みに失敗しました', 'error');
+  }
+}
+
+// 定型文モーダル非表示
+function hideSnippetModal() {
+  elements.snippetModal.style.display = 'none';
+}
+
+// エディタに定型文を挿入
+function insertSnippetToEditor(key) {
+  const textarea = document.getElementById('articleBody');
+  const start = textarea.selectionStart;
+  const text = textarea.value;
+  const snippet = `{% ${key} %}`;
+
+  textarea.value = text.substring(0, start) + snippet + text.substring(start);
+  textarea.focus();
+  textarea.selectionStart = textarea.selectionEnd = start + snippet.length;
+
+  if (state.previewVisible) {
+    clearTimeout(state.previewTimer);
+    state.previewTimer = setTimeout(() => updatePreview(), 300);
+  }
 }
 
 // ファイルモーダルのリスト表示
@@ -958,6 +1053,135 @@ async function saveImageMetadata() {
 function hideMetadataModal() {
   elements.metadataModal.style.display = 'none';
   state.editingImageFilename = null;
+}
+
+// === 定型文（スニペット）管理 ===
+
+// スニペット一覧読み込み
+async function loadSnippetList() {
+  try {
+    const res = await fetch('/admin/api/snippets');
+    state.snippets = await res.json();
+    renderSnippetList();
+    elements.snippetEditor.style.display = 'none';
+  } catch (err) {
+    showToast('定型文の読み込みに失敗しました', 'error');
+  }
+}
+
+// スニペット一覧表示
+function renderSnippetList() {
+  if (state.snippets.length === 0) {
+    elements.snippetList.innerHTML = '<p class="empty-message">定型文はまだありません。「+ 新規作成」で追加してください。</p>';
+    return;
+  }
+
+  elements.snippetList.innerHTML = state.snippets.map(snippet => {
+    const preview = snippet.value.length > 80
+      ? escapeHtml(snippet.value.substring(0, 80)) + '...'
+      : escapeHtml(snippet.value);
+    return `
+      <div class="snippet-item" data-key="${escapeHtml(snippet.key)}">
+        <div class="snippet-item-header">
+          <code class="snippet-item-key">{%${escapeHtml(snippet.key)}%}</code>
+        </div>
+        <div class="snippet-item-value">${preview}</div>
+      </div>
+    `;
+  }).join('');
+
+  elements.snippetList.querySelectorAll('.snippet-item').forEach(item => {
+    item.addEventListener('click', () => editSnippet(item.dataset.key));
+  });
+}
+
+// スニペット新規作成
+function createNewSnippet() {
+  state.editingSnippetKey = null;
+  elements.snippetKey.value = '';
+  elements.snippetValue.value = '';
+  elements.snippetUsage.textContent = '';
+  elements.deleteSnippetBtn.style.display = 'none';
+  elements.snippetEditor.style.display = 'block';
+  elements.snippetKey.focus();
+}
+
+// スニペット編集
+function editSnippet(key) {
+  const snippet = state.snippets.find(s => s.key === key);
+  if (!snippet) return;
+
+  state.editingSnippetKey = key;
+  elements.snippetKey.value = snippet.key;
+  elements.snippetValue.value = snippet.value;
+  elements.snippetUsage.textContent = `{% ${snippet.key} %}`;
+  elements.deleteSnippetBtn.style.display = 'inline-flex';
+  elements.snippetEditor.style.display = 'block';
+  elements.snippetKey.focus();
+}
+
+// スニペット保存
+async function saveSnippetAction() {
+  const key = elements.snippetKey.value.trim();
+  const value = elements.snippetValue.value;
+
+  if (!key) {
+    showToast('キー名を入力してください', 'error');
+    return;
+  }
+  if (!/^\w+$/.test(key)) {
+    showToast('キー名は英数字とアンダースコアのみ使用できます', 'error');
+    return;
+  }
+
+  try {
+    if (state.editingSnippetKey && state.editingSnippetKey !== key) {
+      const res = await fetch(`/admin/api/snippets/${encodeURIComponent(state.editingSnippetKey)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newKey: key, value })
+      });
+      if (!res.ok) throw new Error('Save failed');
+    } else if (state.editingSnippetKey) {
+      const res = await fetch(`/admin/api/snippets/${encodeURIComponent(key)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value })
+      });
+      if (!res.ok) throw new Error('Save failed');
+    } else {
+      const res = await fetch('/admin/api/snippets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value })
+      });
+      if (!res.ok) throw new Error('Save failed');
+    }
+
+    showToast('保存しました', 'success');
+    await loadSnippetList();
+  } catch (err) {
+    showToast('保存に失敗しました', 'error');
+  }
+}
+
+// スニペット削除
+async function deleteSnippetAction() {
+  if (!state.editingSnippetKey) return;
+  if (!confirm('この定型文を削除しますか？')) return;
+
+  try {
+    const res = await fetch(`/admin/api/snippets/${encodeURIComponent(state.editingSnippetKey)}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Delete failed');
+
+    showToast('削除しました', 'success');
+    state.editingSnippetKey = null;
+    await loadSnippetList();
+  } catch (err) {
+    showToast('削除に失敗しました', 'error');
+  }
 }
 
 // トースト表示
