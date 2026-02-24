@@ -1,5 +1,3 @@
-// static/main.js
-
 document.addEventListener('DOMContentLoaded', () => {
   // テーマ初期化（ページ読み込み時にlocalStorageから復元）
   const savedTheme = localStorage.getItem('theme');

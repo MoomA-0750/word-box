@@ -1,5 +1,3 @@
-// static/admin.js
-
 const state = {
   currentSection: 'posts',
   articles: [],
