@@ -1,17 +1,19 @@
 {{magazineToc}}
-<article>
-  <header class="post-header">
-    <div class="post-header-emoji">{{emoji}}</div>
-    <div class="post-header-text">
-      <h1>{{title}}</h1>
-      <div class="post-meta">
-        <time>{{date}}</time>
-        {{tags}}
+<article class="card shadow-sm mb-4">
+  <div class="card-body p-4">
+    <header class="d-flex align-items-start gap-4 pb-3 mb-4 border-bottom">
+      <div class="flex-shrink-0 lh-1" style="font-size:4rem">{{emoji}}</div>
+      <div class="flex-grow-1">
+        <h1 class="h2 mb-2">{{title}}</h1>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <time class="text-muted small">{{date}}</time>
+          {{tags}}
+        </div>
       </div>
+    </header>
+    <div class="content">
+      {{content}}
     </div>
-  </header>
-  <div class="content">
-    {{content}}
   </div>
 </article>
 {{magazineNav}}

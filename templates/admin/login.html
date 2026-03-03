@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ログイン - WordBox Admin</title>
+  <link rel="stylesheet" href="/static/bootstrap.min.css">
   <link rel="stylesheet" href="/static/style.css">
   <script>
     const savedTheme = localStorage.getItem('theme');
@@ -16,89 +17,21 @@
       document.documentElement.setAttribute('data-theme', 'dark');
     }
   </script>
-  <style>
-    body {
-      background: var(--bg-color);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .login-box {
-      background: var(--card-bg);
-      padding: 40px;
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-hover);
-      border: 1px solid var(--border-color);
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .login-box h1 {
-      color: var(--accent-color);
-      margin-bottom: 30px;
-      text-align: center;
-      font-size: 24px;
-    }
-
-    .login-box .form-group {
-      margin-bottom: 20px;
-    }
-
-    .login-box label {
-      color: var(--text-secondary);
-    }
-
-    .login-box input[type="password"] {
-      border: 2px solid var(--border-color);
-      background: var(--input-bg);
-      color: var(--text-color);
-    }
-
-    .login-box input[type="password"]:focus {
-      border-color: var(--accent-color);
-    }
-
-    .login-box button {
-      width: 100%;
-      padding: 14px;
-      background: var(--accent-color);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-md);
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background var(--transition-fast);
-    }
-
-    .login-box button:hover {
-      background: var(--accent-hover);
-    }
-
-    .error {
-      color: var(--danger-color);
-      text-align: center;
-      margin-top: 15px;
-      font-size: 14px;
-      display: none;
-    }
-  </style>
 </head>
 
-<body>
+<body class="admin-login-page d-flex align-items-center justify-content-center min-vh-100">
   <div class="login-box">
     <h1>🔐 WordBox Admin</h1>
     <form id="loginForm">
-      <div class="form-group">
-        <label for="password">パスワード</label>
-        <input type="password" id="password" name="password" required autofocus>
+      <div class="mb-3">
+        <label for="password" class="form-label">パスワード</label>
+        <input type="password" id="password" name="password" class="form-control" required autofocus>
       </div>
-      <button type="submit">ログイン</button>
-      <p class="error" id="error">パスワードが正しくありません</p>
+      <button type="submit" class="btn btn-primary w-100 py-2 fs-6 fw-semibold">ログイン</button>
+      <p class="text-danger text-center mt-3" id="error" style="display: none;">パスワードが正しくありません</p>
     </form>
   </div>
+  <script src="/static/bootstrap.bundle.min.js"></script>
   <script>
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();

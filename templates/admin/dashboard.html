@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WordBox Admin</title>
+  <link rel="stylesheet" href="/static/bootstrap.min.css">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 
@@ -44,7 +45,7 @@
         <!-- 一覧表示 -->
         <div id="listView" class="list-view">
           <div class="list-header">
-            <input type="text" id="searchInput" placeholder="検索..." class="search-input">
+            <input type="text" id="searchInput" placeholder="検索..." class="form-control search-input">
           </div>
           <div id="itemList" class="item-list">
           </div>
@@ -70,34 +71,34 @@
             <div class="form-row">
               <div class="form-group">
                 <label>ID (ファイル名)</label>
-                <input type="text" id="articleId" placeholder="例: my-first-post">
+                <input type="text" id="articleId" placeholder="例: my-first-post" class="form-control">
               </div>
               <div class="form-group form-group-small">
                 <label>絵文字</label>
-                <input type="text" id="articleEmoji" placeholder="📝">
+                <input type="text" id="articleEmoji" placeholder="📝" class="form-control">
               </div>
             </div>
 
             <div class="form-group">
               <label>タイトル</label>
-              <input type="text" id="articleTitle" placeholder="記事タイトル">
+              <input type="text" id="articleTitle" placeholder="記事タイトル" class="form-control">
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label>日付</label>
-                <input type="date" id="articleDate">
+                <input type="date" id="articleDate" class="form-control">
               </div>
               <div class="form-group">
                 <label>タグ（カンマ区切り）</label>
-                <input type="text" id="articleTags" placeholder="tag1, tag2">
+                <input type="text" id="articleTags" placeholder="tag1, tag2" class="form-control">
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label>説明 (quicklook / description)</label>
-                <input type="text" id="articleDescription" placeholder="記事の簡単な説明">
+                <input type="text" id="articleDescription" placeholder="記事の簡単な説明" class="form-control">
               </div>
               <div class="form-group form-group-small">
                 <label>公開</label>
@@ -111,7 +112,7 @@
             <!-- マガジン専用: 記事リスト -->
             <div class="form-group" id="magazineArticlesGroup" style="display: none;">
               <label>収録記事（1行1スラッグ）</label>
-              <textarea id="magazineArticles" rows="5" placeholder="2025-01-22-first&#10;2025-01-23-second"></textarea>
+              <textarea id="magazineArticles" rows="5" placeholder="2025-01-22-first&#10;2025-01-23-second" class="form-control"></textarea>
             </div>
 
             <!-- 辞書専用フィールド -->
@@ -119,16 +120,16 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>読み仮名</label>
-                  <input type="text" id="dictReading" placeholder="例: まーくだうん">
+                  <input type="text" id="dictReading" placeholder="例: まーくだうん" class="form-control">
                 </div>
                 <div class="form-group">
                   <label>カテゴリ</label>
-                  <input type="text" id="dictCategory" placeholder="例: WEB技術, 記法, プログラミング">
+                  <input type="text" id="dictCategory" placeholder="例: WEB技術, 記法, プログラミング" class="form-control">
                 </div>
               </div>
               <div class="form-group">
                 <label>関連用語（カンマ区切りのスラッグ）</label>
-                <input type="text" id="dictRelated" placeholder="例: html, css, javascript">
+                <input type="text" id="dictRelated" placeholder="例: html, css, javascript" class="form-control">
               </div>
             </div>
 
@@ -136,11 +137,11 @@
             <div id="articleExtraFieldsGroup" style="display: none;">
               <div class="form-group">
                 <label>関連記事（カンマ区切りのスラッグ）</label>
-                <input type="text" id="articleRelated" placeholder="例: 2025-01-22-first, 2025-01-23-second">
+                <input type="text" id="articleRelated" placeholder="例: 2025-01-22-first, 2025-01-23-second" class="form-control">
               </div>
               <div class="form-group">
                 <label>検索ワード（カンマ区切り）</label>
-                <input type="text" id="articleKeywords" placeholder="例: React, フロントエンド, SPA">
+                <input type="text" id="articleKeywords" placeholder="例: React, フロントエンド, SPA" class="form-control">
               </div>
             </div>
 
@@ -161,7 +162,7 @@
                 <button type="button" class="toolbar-btn" data-action="snippet" title="定型文">📋</button>
               </div>
               <div class="editor-body-container">
-                <textarea id="articleBody" rows="20" placeholder="Markdown で記述..."></textarea>
+                <textarea id="articleBody" rows="20" placeholder="Markdown で記述..." class="form-control"></textarea>
                 <div id="previewPanel" class="preview-panel" style="display: none;">
                   <div class="preview-panel-header">
                     <span>📖 プレビュー</span>
@@ -203,11 +204,11 @@
           <div id="snippetEditor" class="snippet-editor" style="display: none;">
             <div class="form-group">
               <label>キー名 (英数字とアンダースコアのみ)</label>
-              <input type="text" id="snippetKey" placeholder="例: author_name">
+              <input type="text" id="snippetKey" placeholder="例: author_name" class="form-control">
             </div>
             <div class="form-group">
               <label>値 (テキストまたはMarkdown)</label>
-              <textarea id="snippetValue" rows="8" placeholder="展開される内容を入力..."></textarea>
+              <textarea id="snippetValue" rows="8" placeholder="展開される内容を入力..." class="form-control"></textarea>
             </div>
             <div class="form-group">
               <label>使い方</label>
@@ -287,19 +288,19 @@
         <div class="metadata-form">
           <div class="form-group">
             <label>名前</label>
-            <input type="text" id="metadataName" placeholder="画像の名前">
+            <input type="text" id="metadataName" placeholder="画像の名前" class="form-control">
           </div>
           <div class="form-group">
             <label>Alt属性（記事挿入時に使用）</label>
-            <input type="text" id="metadataAlt" placeholder="画像の代替テキスト">
+            <input type="text" id="metadataAlt" placeholder="画像の代替テキスト" class="form-control">
           </div>
           <div class="form-group">
             <label>説明</label>
-            <textarea id="metadataDescription" rows="3" placeholder="画像の説明"></textarea>
+            <textarea id="metadataDescription" rows="3" placeholder="画像の説明" class="form-control"></textarea>
           </div>
           <div class="form-group">
             <label>タグ（カンマ区切り）</label>
-            <input type="text" id="metadataTags" placeholder="風景, 夕日, 海">
+            <input type="text" id="metadataTags" placeholder="風景, 夕日, 海" class="form-control">
           </div>
           <div class="metadata-actions">
             <button class="btn btn-ghost" id="cancelMetadata">キャンセル</button>
@@ -326,15 +327,15 @@
         <div class="metadata-form">
           <div class="form-group">
             <label>名前</label>
-            <input type="text" id="fileMetadataName" placeholder="ファイルの名前">
+            <input type="text" id="fileMetadataName" placeholder="ファイルの名前" class="form-control">
           </div>
           <div class="form-group">
             <label>説明</label>
-            <textarea id="fileMetadataDescription" rows="3" placeholder="ファイルの説明"></textarea>
+            <textarea id="fileMetadataDescription" rows="3" placeholder="ファイルの説明" class="form-control"></textarea>
           </div>
           <div class="form-group">
             <label>タグ（カンマ区切り）</label>
-            <input type="text" id="fileMetadataTags" placeholder="ドキュメント, PDF, マニュアル">
+            <input type="text" id="fileMetadataTags" placeholder="ドキュメント, PDF, マニュアル" class="form-control">
           </div>
           <div class="metadata-actions">
             <button class="btn btn-ghost" id="cancelFileMetadata">キャンセル</button>
@@ -345,6 +346,7 @@
     </div>
   </div>
 
+  <script src="/static/bootstrap.bundle.min.js"></script>
   <script src="/static/admin.js"></script>
 </body>
 

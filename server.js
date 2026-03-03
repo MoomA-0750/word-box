@@ -324,23 +324,25 @@ async function getMagazineForArticle(articleSlug) {
 // タグHTML生成
 function renderTagsHtml(tags) {
   if (!tags || tags.length === 0) return '';
-  return `<div class="tags">${tags.map(tag =>
-    `<a href="/tags/${encodeURIComponent(tag)}" class="tag">${tag}</a>`
-  ).join('')}</div>`;
+  return tags.map(tag =>
+    `<a href="/tags/${encodeURIComponent(tag)}" class="badge rounded-pill text-decoration-none tag">${tag}</a>`
+  ).join('');
 }
 
 // 記事カードHTML生成（tiny-relative-date で相対日付を表示）
 function renderPostCard(post, urlPrefix) {
   const relDateHtml = post.relativeDate
-    ? `<span class="post-relative-date" title="${post.date}">${post.relativeDate}</span>`
+    ? `<span class="text-muted small ms-1" title="${post.date}">${post.relativeDate}</span>`
     : '';
-  return `<article class="post-list-item">
-    <div class="post-emoji">${post.emoji}</div>
-    <div class="post-info">
-      <h3><a href="${urlPrefix}/${post.slug}">${post.title}</a></h3>
-      <div class="post-meta">
-        <time>${post.date}</time>${relDateHtml}
-        ${renderTagsHtml(post.tags)}
+  return `<article class="card mb-3 shadow-sm post-list-item">
+    <div class="card-body d-flex align-items-center gap-3 py-3">
+      <div class="flex-shrink-0 lh-1" style="font-size:2.5rem">${post.emoji}</div>
+      <div class="flex-grow-1">
+        <h3 class="h5 mb-1"><a href="${urlPrefix}/${post.slug}" class="text-decoration-none post-title">${post.title}</a></h3>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <time class="text-muted small">${post.date}</time>${relDateHtml}
+          ${renderTagsHtml(post.tags)}
+        </div>
       </div>
     </div>
   </article>`;
@@ -437,21 +439,21 @@ function renderRelatedArticles(currentSlug, currentType, metadata, allPosts, all
   const renderCard = (article) => {
     const urlPrefix = article.type === 'posts' ? '/posts' : '/topics';
     const tagsHtml = article.tags.length > 0
-      ? `<div class="tags tags-small">${article.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>`
+      ? article.tags.map(tag => `<span class="badge rounded-pill bg-secondary tag">${escapeHtml(tag)}</span>`).join('')
       : '';
     const subtitleHtml = article.quicklook
-      ? `<span class="article-quicklook">${escapeHtml(article.quicklook)}</span>`
-      : `<time>${escapeHtml(article.date)}</time>`;
-    return `<a href="${urlPrefix}/${article.slug}" class="article-card">
-      <div class="article-icon">${article.emoji}</div>
-      <div class="article-content">
-        <div class="article-title">${escapeHtml(article.title)}</div>
-        <div class="article-meta">
+      ? `<span class="text-muted small">${escapeHtml(article.quicklook)}</span>`
+      : `<time class="text-muted small">${escapeHtml(article.date)}</time>`;
+    return `<a href="${urlPrefix}/${article.slug}" class="d-flex align-items-center gap-3 p-3 border rounded mb-2 text-decoration-none article-card">
+      <div class="flex-shrink-0 lh-1" style="font-size:2rem">${article.emoji}</div>
+      <div class="flex-grow-1">
+        <div class="fw-semibold article-title">${escapeHtml(article.title)}</div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
           ${subtitleHtml}
           ${tagsHtml}
         </div>
       </div>
-      <div class="article-arrow">→</div>
+      <span class="text-muted flex-shrink-0">→</span>
     </a>`;
   };
 
@@ -462,9 +464,9 @@ function renderRelatedArticles(currentSlug, currentType, metadata, allPosts, all
   }).filter(a => a);
 
   if (manualRelated.length > 0) {
-    html += `<div class="related-section">
-      <h3 class="related-section-heading">関連記事</h3>
-      <div class="related-section-list">${manualRelated.map(renderCard).join('')}</div>
+    html += `<div class="related-section mt-4 pt-3 border-top">
+      <h3 class="h5 mb-3">関連記事</h3>
+      <div>${manualRelated.map(renderCard).join('')}</div>
     </div>`;
   }
 
@@ -483,9 +485,9 @@ function renderRelatedArticles(currentSlug, currentType, metadata, allPosts, all
     tagRelated = tagRelated.slice(0, 5);
 
     if (tagRelated.length > 0) {
-      html += `<div class="related-section">
-        <h3 class="related-section-heading">同じタグを持つ記事</h3>
-        <div class="related-section-list">${tagRelated.map(renderCard).join('')}</div>
+      html += `<div class="related-section mt-4 pt-3 border-top">
+        <h3 class="h5 mb-3">同じタグを持つ記事</h3>
+        <div>${tagRelated.map(renderCard).join('')}</div>
       </div>`;
     }
   }
@@ -646,13 +648,13 @@ http.createServer(async (req, res) => {
 
       const magazinesHtml = magazines.map(mag => {
         const articleCount = mag.articles.length;
-        return `<article class="magazine-card">
-          <div class="magazine-emoji">${mag.emoji}</div>
-          <div class="magazine-info">
-            <h3><a href="/magazines/${mag.slug}">${mag.title}</a></h3>
-            <p class="magazine-description">${mag.description}</p>
-            <div class="magazine-meta">
-              <span>${articleCount}件の記事</span>
+        return `<article class="card mb-3 shadow-sm">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="flex-shrink-0 lh-1" style="font-size:3rem">${mag.emoji}</div>
+            <div class="flex-grow-1">
+              <h3 class="h5 mb-1"><a href="/magazines/${mag.slug}" class="text-decoration-none">${mag.title}</a></h3>
+              <p class="text-muted mb-1 small">${mag.description}</p>
+              <span class="badge bg-secondary">${articleCount}件の記事</span>
             </div>
           </div>
         </article>`;
@@ -660,10 +662,8 @@ http.createServer(async (req, res) => {
 
       const content = `
         <div class="magazine-page">
-          <h2>マガジン</h2>
-          <div class="magazine-list">
-            ${magazinesHtml || '<p>マガジンはまだありません。</p>'}
-          </div>
+          <h2 class="mb-4">マガジン</h2>
+          ${magazinesHtml || '<p>マガジンはまだありません。</p>'}
         </div>
       `;
 
@@ -692,19 +692,17 @@ http.createServer(async (req, res) => {
       const articlesHtml = magazine.articles.map((articleSlug, index) => {
         const post = allPosts.find(p => p.slug === articleSlug);
         if (post) {
-          return `<div class="magazine-article-item">
-            <span class="magazine-article-number">${index + 1}</span>
-            <div class="magazine-article-info">
-              <a href="/posts/${post.slug}">${post.title}</a>
-              <time>${post.date}</time>
+          return `<a href="/posts/${post.slug}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+            <span class="badge bg-secondary rounded-pill flex-shrink-0">${index + 1}</span>
+            <div class="flex-grow-1">
+              <div>${post.title}</div>
+              <small class="text-muted">${post.date}</small>
             </div>
-          </div>`;
+          </a>`;
         } else {
-          return `<div class="magazine-article-item magazine-article-notfound">
-            <span class="magazine-article-number">${index + 1}</span>
-            <div class="magazine-article-info">
-              <span>${articleSlug} (見つかりません)</span>
-            </div>
+          return `<div class="list-group-item d-flex align-items-center gap-3 text-muted">
+            <span class="badge bg-secondary rounded-pill flex-shrink-0">${index + 1}</span>
+            <span>${articleSlug} (見つかりません)</span>
           </div>`;
         }
       }).join('\n');
@@ -714,20 +712,18 @@ http.createServer(async (req, res) => {
 
       const content = `
         <div class="magazine-detail">
-          <header class="magazine-header">
-            <div class="magazine-header-emoji">${magazine.emoji}</div>
-            <div class="magazine-header-text">
-              <h1>${magazine.title}</h1>
-              <p class="magazine-description">${magazine.description}</p>
-              <div class="magazine-meta">
-                <span>${magazine.articles.length}件の記事</span>
-              </div>
+          <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+            <div class="flex-shrink-0 lh-1" style="font-size:4rem">${magazine.emoji}</div>
+            <div class="flex-grow-1">
+              <h1 class="h2 mb-1">${magazine.title}</h1>
+              <p class="text-muted mb-1">${magazine.description}</p>
+              <span class="badge bg-secondary">${magazine.articles.length}件の記事</span>
             </div>
-          </header>
-          ${bodyHtml ? `<div class="magazine-body content">${bodyHtml}</div>` : ''}
+          </div>
+          ${bodyHtml ? `<div class="magazine-body content mb-4">${bodyHtml}</div>` : ''}
           <div class="magazine-articles">
-            <h2>収録記事</h2>
-            <div class="magazine-article-list">
+            <h2 class="h4 mb-3">収録記事</h2>
+            <div class="list-group">
               ${articlesHtml}
             </div>
           </div>
@@ -789,14 +785,14 @@ http.createServer(async (req, res) => {
         entriesHtml += `<h3 class="dictionary-category-title">${escapeHtml(category)}</h3>`;
         entriesHtml += `<div class="dictionary-entries">`;
         for (const entry of catEntries) {
-          entriesHtml += `<a href="/dictionary/${entry.slug}" class="dictionary-entry-card">
-            <div class="dictionary-entry-emoji">${entry.emoji}</div>
-            <div class="dictionary-entry-info">
-              <div class="dictionary-entry-title">${escapeHtml(entry.title)}</div>
-              ${entry.reading ? `<div class="dictionary-entry-reading">${escapeHtml(entry.reading)}</div>` : ''}
-              <div class="dictionary-entry-desc">${escapeHtml(entry.description)}</div>
+          entriesHtml += `<a href="/dictionary/${entry.slug}" class="d-flex align-items-center gap-3 p-3 border rounded mb-2 text-decoration-none dictionary-entry-card">
+            <div class="flex-shrink-0 lh-1" style="font-size:2rem">${entry.emoji}</div>
+            <div class="flex-grow-1">
+              <div class="fw-semibold">${escapeHtml(entry.title)}</div>
+              ${entry.reading ? `<div class="text-muted small">${escapeHtml(entry.reading)}</div>` : ''}
+              <div class="text-muted small">${escapeHtml(entry.description)}</div>
             </div>
-            <div class="dictionary-entry-arrow">→</div>
+            <span class="text-muted flex-shrink-0">→</span>
           </a>`;
         }
         entriesHtml += `</div></div>`;
@@ -841,16 +837,16 @@ http.createServer(async (req, res) => {
         const relatedItems = metadata.related.map(relSlug => {
           const relEntry = allDictEntries.find(e => e.slug === relSlug);
           if (relEntry) {
-            return `<a href="/dictionary/${relEntry.slug}" class="dictionary-related-item">
-              <span class="dictionary-related-emoji">${relEntry.emoji}</span>
-              <span class="dictionary-related-title">${escapeHtml(relEntry.title)}</span>
+            return `<a href="/dictionary/${relEntry.slug}" class="d-inline-flex align-items-center gap-1 badge bg-secondary text-decoration-none p-2 me-2 mb-2 fs-6 dictionary-related-item">
+              <span>${relEntry.emoji}</span>
+              <span>${escapeHtml(relEntry.title)}</span>
             </a>`;
           }
           return '';
         }).filter(h => h).join('');
-        relatedHtml = `<div class="dictionary-related">
-          <h3>関連用語</h3>
-          <div class="dictionary-related-list">${relatedItems}</div>
+        relatedHtml = `<div class="dictionary-related mt-4 pt-3 border-top">
+          <h3 class="h5 mb-3">関連用語</h3>
+          <div>${relatedItems}</div>
         </div>`;
       }
 
@@ -895,13 +891,15 @@ http.createServer(async (req, res) => {
         else if (doc.type === 'dictionary') url = `/dictionary/${doc.id}`;
 
         return `
-        <div class="search-result-item">
-          <h3><a href="${url}"><span class="search-result-emoji">${doc.emoji}</span> ${doc.title}</a></h3>
-          <div class="search-result-meta">
-            <span class="search-result-type">${doc.type}</span>
-            ${doc.date ? `<time>${doc.date}</time>` : ''}
+        <div class="card mb-3 search-result-item">
+          <div class="card-body">
+            <h3 class="h5 mb-1"><a href="${url}" class="text-decoration-none">${doc.emoji} ${doc.title}</a></h3>
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="badge bg-secondary">${doc.type}</span>
+              ${doc.date ? `<time class="text-muted small">${doc.date}</time>` : ''}
+            </div>
+            <p class="mb-0 text-muted small search-result-snippet">${r.snippet}</p>
           </div>
-          <div class="search-result-snippet">${r.snippet}</div>
         </div>`;
       }).join('\n') || '<p>該当する記事が見つかりませんでした。</p>';
 

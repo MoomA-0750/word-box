@@ -1,18 +1,22 @@
 <article class="dictionary-detail">
-    <header class="dictionary-header">
-        <div class="dictionary-header-emoji">{{emoji}}</div>
-        <div class="dictionary-header-text">
-            <div class="dictionary-header-badge">📖 辞書</div>
-            <h1>{{title}}</h1>
-            <div class="dictionary-header-meta">
-                <span class="dictionary-reading">{{reading}}</span>
-                <span class="dictionary-category-badge">{{category}}</span>
-            </div>
-            <p class="dictionary-description">{{description}}</p>
+  <div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-start gap-4 pb-3 mb-4 border-bottom">
+        <div class="flex-shrink-0 lh-1" style="font-size:4rem">{{emoji}}</div>
+        <div class="flex-grow-1">
+          <span class="badge bg-secondary mb-2">📖 辞書</span>
+          <h1 class="h2 mb-2">{{title}}</h1>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="text-muted small">{{reading}}</span>
+            <span class="badge bg-secondary rounded-pill">{{category}}</span>
+          </div>
+          <p class="text-muted mt-2 mb-0">{{description}}</p>
         </div>
-    </header>
-    <div class="content">
+      </div>
+      <div class="content">
         {{content}}
+      </div>
     </div>
-    {{related}}
+  </div>
+  {{related}}
 </article>
